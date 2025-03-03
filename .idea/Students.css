@@ -1,3 +1,7 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
 }
@@ -24,10 +28,11 @@ h1 a {
 aside {
     width: 20%;
     float: left;
+    height: 100vh;
 }
 
 .navbar ul{
-    padding-left: 15px;
+    padding-left: 20%;
     list-style-type: none;
 }
 .navbar a {
@@ -46,13 +51,28 @@ aside {
     align-items: end;
 }
 #students button {
+    margin-right: 10px;
     margin-left: auto;
+    padding: 3 px 6px;
+    font-size: 24px;
 }
 
 table {
     border-collapse: collapse;
     border-style: solid;
-    margin: auto;
-    width: 80%;
     float: left;
+    width: 100%;
+}
+#table {
+    padding-right: 20px;
+    overflow-x: scroll;
+    width: 80%;
+}
+table th {
+}
+
+@media screen and (max-width:500px) {
+    .navbar {
+        display: none;
+    }
 }
