@@ -4,18 +4,57 @@
     <meta charset="UTF-8">
     <title>Internet Programming</title>
     <link rel="stylesheet" href="Students.css">
-    <link rel="icon" href="/assets/isaac.gif">
+    <link rel="icon" href="assets/isaac.gif">
 </head>
 <body>
-<div class="header">
-    <h1>CMS</h1>
-</div>
-<div class="header">
-    <img src="assets/bell.svg" alt="Bell">
+<header>
+    <h1><a href="Students.html">CMS</a></h1>
     <div class="profile">
-        <img src="assets/user.svg" alt="user">
+        <img src="assets/bell.png" alt="Bell">
+        <img src="assets/user.png" alt="user" width="32" height="32">
         <h2>Ihor Braichenko</h2>
     </div>
-</div>
+</header>
+
+<aside>
+    <nav class="navbar">
+        <ul>
+            <li><a href="Dashboard.html">Dashboard</a></li>
+            <li><a href="Students.html"><b>Students</b></a></li>
+            <li><a href="Tasks.html" >Tasks</a></li>
+        </ul>
+    </nav>
+</aside>
+
+<main>
+    <div id="students">
+        <h2>Students</h2>
+        <button>Add</button>
+    </div>
+
+    <table border="1">
+        <tr align="center">
+            <th>Checkbox</th>
+            <th>Group</th>
+            <th>Name</th>
+            <th>Gender</th>
+            <th>Birthday</th>
+            <th>Status</th>
+            <th>Options</th>
+        </tr>
+        <tr align="center">
+            <td>checkbox</td>
+            <td>group</td>
+            <td>name</td>
+            <td>gender</td>
+            <td>date</td>
+            <td>status</td>
+            <td>
+                <button>edit</button>
+                <button>delete</button>
+            </td>
+        </tr>
+    </table>
+</main>
 </body>
 </html>
