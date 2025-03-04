@@ -99,8 +99,7 @@ table {
     overflow-x: scroll;
     width: 80%;
 }
-table th {
-}
+
 
 @media screen and (max-width:500px) {
     .navbar {
