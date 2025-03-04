@@ -18,12 +18,43 @@ h1 a {
     text-decoration: none;
 }
 
-.profile {
+.right-header {
     margin-left: auto;
     margin-right: 15px;
     display: flex;
     align-items: center;
+    position: relative;
 }
+.account-container  {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown {
+    display: none;
+    position: absolute;
+    top: 50px;
+}
+.profile:hover .dropdown {
+    display: block;
+    background-color: gray;
+    padding: 10px 20px;
+    width: 80%;
+    text-align: center;
+}
+.dropdown a {
+    color: #e4e4e4;
+    text-decoration: none;
+    text-wrap: nowrap;
+    font-size: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+.dropdown a:hover {
+    background-color: #b3b3b3;
+}
+
+
 
 aside {
     width: 20%;
