@@ -18,6 +18,32 @@ h1 a {
     text-decoration: none;
 }
 
+#bell {
+    animation-name: skew;
+    animation-duration: 3s;
+    animation-iteration-count: 1;
+    position: absolute;
+    top: -16px;
+    right: 0px;
+}
+.notification {
+    position: relative;
+}
+
+#notification-status {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    top: -15px;
+    left: -12px;
+}
+
+@keyframes skew {
+     0%{transform: skew(0deg);}
+    50%{transform: skew(120deg)}
+    100%{transform: skew(240deg)}
+}
+
 .right-header {
     margin-left: auto;
     margin-right: 15px;
@@ -99,7 +125,16 @@ table {
     overflow-x: scroll;
     width: 80%;
 }
-
+#status-on, #status-off {
+    width: 10px;
+    height: 10px;
+}
+tr:nth-child(even) #status-on {
+    display: none;
+}
+tr:nth-child(odd) #status-off {
+    display: none;
+}
 
 @media screen and (max-width:500px) {
     .navbar {

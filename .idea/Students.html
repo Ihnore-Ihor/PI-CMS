@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <title>Internet Programming</title>
     <link rel="stylesheet" href="Students.css">
-    <link rel="icon" href="assets/isaac.gif">
+    <link rel="icon" type="image/gif" href="assets/isaac.gif">
 </head>
 <body>
 <header>
     <h1><a href="Students.html" title="Students page">CMS</a></h1>
     <div class="right-header">
-        <img src="assets/bell.png" alt="Bell">
+        <div class="notification">
+            <img id="bell" src="assets/bell.png" alt="Bell">
+            <img id="notification-status" src="assets/notification.png" alt="notification status">
+        </div>
         <div class="profile" title="Profile">
             <div class="account-container">
                 <img src="assets/user.png" alt="user" width="32" height="32">
@@ -59,7 +62,25 @@
                 <td>name</td>
                 <td>gender</td>
                 <td>date</td>
-                <td>status</td>
+                <td>
+                    <img id="status-off" src="assets/status_off.png" alt="Status">
+                    <img id="status-on" src="assets/status_on.png" alt="Status">
+                </td>
+                <td>
+                    <button>edit</button>
+                    <button>delete</button>
+                </td>
+            </tr>
+            <tr align="center">
+                <td>checkbox</td>
+                <td>group</td>
+                <td>name</td>
+                <td>gender</td>
+                <td>date</td>
+                <td>
+                    <img id="status-off" src="assets/status_off.png" alt="Status">
+                    <img id="status-on" src="assets/status_on.png" alt="Status">
+                </td>
                 <td>
                     <button>edit</button>
                     <button>delete</button>
