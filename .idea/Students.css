@@ -19,9 +19,6 @@ h1 a {
 }
 
 #bell {
-    animation-name: skew;
-    animation-duration: 3s;
-    animation-iteration-count: 1;
     position: absolute;
     top: -16px;
     right: 0px;
@@ -125,19 +122,25 @@ table {
     overflow-x: scroll;
     width: 80%;
 }
-#status-on, #status-off {
+.status-on, .status-off {
     width: 10px;
     height: 10px;
 }
-tr:nth-child(even) #status-on {
+tr:nth-child(even) .status-on {
     display: none;
 }
-tr:nth-child(odd) #status-off {
+tr:nth-child(odd) .status-off {
     display: none;
+}
+tr {
+    text-align: center;
+}
+td p {
+    margin: 0;
 }
 
 @media screen and (max-width:500px) {
-    .navbar {
+    aside {
         display: none;
     }
 }

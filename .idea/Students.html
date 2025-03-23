@@ -43,12 +43,14 @@
 <main>
     <div id="students">
         <h2>Students</h2>
-        <button><b>+</b></button>
+        <button id="addStudent"><b>+</b></button>
     </div>
     <div id="table">
-        <table border="1">
-            <tr align="center">
-                <th>Checkbox</th>
+        <table border="1" id="tableStudents">
+            <tr>
+                <th>
+                    <input type="checkbox" class="checkbox"></input>
+                </th>
                 <th>Group</th>
                 <th>Name</th>
                 <th>Gender</th>
@@ -56,30 +58,34 @@
                 <th>Status</th>
                 <th>Options</th>
             </tr>
-            <tr align="center">
-                <td>checkbox</td>
+            <tr>
+                <td>
+                    <input type="checkbox" class="checkbox"></input>
+                </td>
                 <td>group</td>
                 <td>name</td>
                 <td>gender</td>
                 <td>date</td>
                 <td>
-                    <img id="status-off" src="assets/status_off.png" alt="Status">
-                    <img id="status-on" src="assets/status_on.png" alt="Status">
+                    <img class="status-off" src="assets/status_off.png" alt="Status">
+                    <img class="status-on" src="assets/status_on.png" alt="Status">
                 </td>
                 <td>
                     <button>edit</button>
                     <button>delete</button>
                 </td>
             </tr>
-            <tr align="center">
-                <td>checkbox</td>
+            <tr>
+                <td>
+                    <input type="checkbox" class="checkbox"></input>
+                </td>
                 <td>group</td>
                 <td>name</td>
                 <td>gender</td>
                 <td>date</td>
                 <td>
-                    <img id="status-off" src="assets/status_off.png" alt="Status">
-                    <img id="status-on" src="assets/status_on.png" alt="Status">
+                    <img class="status-off" src="assets/status_off.png" alt="Status">
+                    <img class="status-on" src="assets/status_on.png" alt="Status">
                 </td>
                 <td>
                     <button>edit</button>
@@ -89,5 +95,6 @@
         </table>
     </div>
 </main>
+<script src="Students.js"></script>
 </body>
 </html>
