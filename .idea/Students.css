@@ -142,16 +142,6 @@ td p {
     margin: 5px;
 }
 
-@media screen and (max-width:500px) {
-    aside {
-        display: none;
-    }
-
-    #profileName {
-        display: none;
-    }
-}
-
 .modal-window {
     display: none;
     position: fixed;
@@ -228,4 +218,21 @@ td p {
 
 .modal-body p {
     margin: 8px;
+}
+
+
+@media screen and (max-width: 576px) {
+    aside {
+        display: none;
+    }
+
+    #profileName {
+        display: none;
+    }
+}
+@media (min-width: 768px) {
+
+}
+@media (min-width: 992px) {
+
 }
