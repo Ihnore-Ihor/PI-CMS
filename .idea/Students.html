@@ -17,7 +17,7 @@
         <div class="profile" title="Profile">
             <div class="account-container">
                 <img src="assets/user.png" alt="user" width="32" height="32">
-                <h2>Ihor Braichenko</h2>
+                <h2 id="profileName">Ihor Braichenko</h2>
             </div>
 
             <div class="dropdown">
@@ -49,7 +49,8 @@
         <table border="1" id="tableStudents">
             <tr>
                 <th>
-                    <input type="checkbox" class="checkbox"></input>
+                    <label for="idStudentMain" style="display: none;">id</label>
+                    <input type="checkbox" class="checkbox" id="idStudentMain"></input>
                 </th>
                 <th>Group</th>
                 <th>Name</th>
@@ -58,41 +59,96 @@
                 <th>Status</th>
                 <th>Options</th>
             </tr>
-            <tr>
-                <td>
-                    <input type="checkbox" class="checkbox"></input>
-                </td>
-                <td>group</td>
-                <td>name</td>
-                <td>gender</td>
-                <td>date</td>
-                <td>
-                    <img class="status-off" src="assets/status_off.png" alt="Status">
-                    <img class="status-on" src="assets/status_on.png" alt="Status">
-                </td>
-                <td>
-                    <button>edit</button>
-                    <button>delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <input type="checkbox" class="checkbox"></input>
-                </td>
-                <td>group</td>
-                <td>name</td>
-                <td>gender</td>
-                <td>date</td>
-                <td>
-                    <img class="status-off" src="assets/status_off.png" alt="Status">
-                    <img class="status-on" src="assets/status_on.png" alt="Status">
-                </td>
-                <td>
-                    <button>edit</button>
-                    <button>delete</button>
-                </td>
-            </tr>
         </table>
+    </div>
+    <div id="pagination">
+        <button id="previousPage"><b>&laquo;</b></button>
+        <button id="page1"><b>1</b></button>
+        <button id="page2"><b>2</b></button>
+        <button id="page3"><b>3</b></button>
+        <button id="nextPage"><b>&raquo;</b></button>
+    </div>
+
+    <div class="modal-window" id="addEditStudent">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="newStudentH2">New Student</h2>
+                <input type="submit" value="&times;" class="close" title="close" id="close">
+            </div>
+            <hr>
+            <form class="modal-form" id="form" required>
+                <div class="modal-body">
+                    <div class="modal-input">
+                        <label for="group">Group</label>
+                        <select id="group" name="Group" required>
+                            <option value="">Select a group</option>
+                            <option value="PZ-22">PZ-22</option>
+                            <option value="PZ-21">PZ-21</option>
+                            <option value="PZ-23">PZ-23</option>
+                            <option value="PZ-24">PZ-24</option>
+                            <option value="PZ-25">PZ-25</option>
+                            <option value="PZ-26">PZ-26</option>
+                            <option value="PZ-11">PZ-11</option>
+                            <option value="PZ-12">PZ-12</option>
+                            <option value="PZ-13">PZ-13</option>
+                            <option value="PZ-14">PZ-14</option>
+                            <option value="PZ-15">PZ-15</option>
+                            <option value="PZ-16">PZ-16</option>
+                            <option value="PZ-17">PZ-17</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="FirstName" required>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="LastName" required>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="Gender" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="dateOfBirth">Birthday</label>
+                        <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                    </div>
+                </div>
+                <hr>
+                <div class="modal-footer">
+                   <input type="submit" value="Cancel" id="cancel">
+                   <input type="submit" value="Confirm" id="confirm">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-window" id="deleteStudent">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="deleteStudentH2Warning">WARNING!!!</h2>
+                <button class="close" id="closeDelete">&times;</button>
+            </div>
+            <hr>
+            <div class="modal-body">
+                <p id="warningMessage">Are you sure you want to delete this student?</p>
+            </div>
+            <hr>
+            <div class="modal-footer">
+                <button class="cancel" id="cancelDelete">Cancel</button>
+                <button class="confirm" id="delete">Delete</button>
+            </div>
+        </div>
     </div>
 </main>
 <script src="Students.js"></script>
