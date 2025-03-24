@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Internet Programming</title>
     <link rel="stylesheet" href="Students.css">
     <link rel="icon" type="image/gif" href="assets/isaac.gif">
@@ -89,11 +90,11 @@
         <button id="addStudent"><b>+</b></button>
     </div>
     <div id="table">
-        <table border="1" id="tableStudents">
+        <table id="tableStudents">
             <tr>
                 <th>
-                    <label for="idStudentMain" style="display: none;">id</label>
-                    <input type="checkbox" class="checkbox" id="idStudentMain"></input>
+                    <label for="idStudentMain" >id</label>
+                    <input type="checkbox" class="checkbox" id="idStudentMain">
                 </th>
                 <th>Group</th>
                 <th>Name</th>
@@ -120,7 +121,7 @@
                 <input type="submit" value="&times;" class="close" title="close" id="close">
             </div>
             <hr>
-            <form class="modal-form" id="form" required>
+            <form class="modal-form" id="form">
                 <div class="modal-body">
                     <div class="modal-input">
                         <label for="group">Group</label>
@@ -155,6 +156,7 @@
                     <div class="modal-input">
                         <label for="gender">Gender</label>
                         <select id="gender" name="Gender" required>
+                            <option value="">Select student's gender</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>

@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("bell").style.animation = "skew 3s 1"
+    document.getElementById("bell").style.animation = "skew 3s 1";
     setTimeout(() => {
         document.getElementById("notification-status").style.opacity = "100%";
     }, 900);
-})
+});
 
 document.getElementById("menuBtn").addEventListener("click", () => {
     const menu = document.getElementById("navbarBurger");
@@ -12,17 +12,17 @@ document.getElementById("menuBtn").addEventListener("click", () => {
     } else {
         menu.style.display = "block";
     }
-})
+});
 
 
-const students = []
+const students = [];
 let count = 0;
 let chosenTableRow = [];
 
 document.getElementById("addStudent").addEventListener("click", () => {
     document.getElementById("addEditStudent").style.display = "block";
     document.getElementById("newStudentH2").innerHTML = "New Student";
-})
+});
 
 document.getElementById("idStudentMain").addEventListener("change", (e) => {
     const checkboxes = document.querySelectorAll(".checkbox");
@@ -69,7 +69,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
 
     const newTableDataGender = document.createElement("td");
     newStudent.appendChild(newTableDataGender);
-    let gender = document.getElementById("gender").value;;
+    let gender = document.getElementById("gender").value;
     const newGender = document.createElement("p");
     newGender.textContent = gender;
     newStudent.appendChild(newGender);
@@ -77,7 +77,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
 
     const newTableDataDate = document.createElement("td");
     newStudent.appendChild(newTableDataDate);
-    let dateOfBirth = document.getElementById("dateOfBirth").value;;
+    let dateOfBirth = document.getElementById("dateOfBirth").value;
     const newDate = document.createElement("p");
     newDate.textContent = dateOfBirth;
     newStudent.appendChild(newDate);
@@ -116,7 +116,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
         if (!checkbox.checked) return;
         document.getElementById("addEditStudent").style.display = "block";
         document.getElementById("newStudentH2").innerHTML = "Edit Student";
-    })
+    });
     newOptionsDelete.addEventListener("click", (e) => {
         const row = e.target.closest("tr");
         const checkbox = row.querySelector("input[type='checkbox']");
@@ -137,7 +137,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
         } else if (chosenTableRow.length > 1) {
             document.getElementById("warningMessage").textContent = `Are you sure you want to delete those students?`;
         }
-    })
+    });
 
     const student = {
         group: group,
@@ -146,7 +146,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
         dateOfBirth: dateOfBirth,
         status: status,
         id: count
-    }
+    };
     students.push(student);
 
     count++;
@@ -156,7 +156,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
     document.getElementById("lastName").value = "";
     document.getElementById("gender").value = "Male";
     document.getElementById("dateOfBirth").value = "";
-})
+});
 
 document.getElementById("cancel").addEventListener("click", (e) => {
     document.getElementById("addEditStudent").style.display = "none";
@@ -166,7 +166,7 @@ document.getElementById("cancel").addEventListener("click", (e) => {
     document.getElementById("lastName").value = "";
     document.getElementById("gender").value = "Male";
     document.getElementById("dateOfBirth").value = "";
-})
+});
 document.getElementById("close").addEventListener("click", (e) => {
     document.getElementById("addEditStudent").style.display = "none";
     document.getElementById("addEditStudent").style.display = "none";
@@ -175,7 +175,7 @@ document.getElementById("close").addEventListener("click", (e) => {
     document.getElementById("lastName").value = "";
     document.getElementById("gender").value = "Male";
     document.getElementById("dateOfBirth").value = "";
-})
+});
 
 
 document.getElementById("delete").addEventListener("click", (e) => {
@@ -191,11 +191,11 @@ document.getElementById("delete").addEventListener("click", (e) => {
 
     document.getElementById("deleteStudent").style.display = "none";
     chosenTableRow = [];
-})
+});
 document.getElementById("c" +
     "ancelDelete").addEventListener("click", (e) => {
     document.getElementById("deleteStudent").style.display = "none";
-})
+});
 document.getElementById("closeDelete").addEventListener("click", (e) => {
     document.getElementById("deleteStudent").style.display = "none";
-})
+});

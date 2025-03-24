@@ -7,7 +7,7 @@ body {
 }
 
 header {
-    background-color: darkgray;
+    background-color: #8c8c8c;
     color: white;
     display: flex;
     align-items: center;
@@ -195,6 +195,9 @@ table {
     float: left;
     width: 100%;
 }
+table td, table th{
+    border: 1px solid black;
+}
 #table {
     overflow-x: scroll;
     width: 80%;
@@ -210,6 +213,10 @@ tr {
 }
 td p {
     margin: 0;
+}
+.idStudent, #idStudentMain {
+    visibility: hidden;
+    position: absolute;
 }
 
 #pagination {
