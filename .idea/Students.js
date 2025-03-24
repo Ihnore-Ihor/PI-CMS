@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("bell").style.animation = "skew 3s 1"
+    setTimeout(() => {
+        document.getElementById("notification-status").style.opacity = "100%";
+    }, 900);
 })
 
 const students = []
