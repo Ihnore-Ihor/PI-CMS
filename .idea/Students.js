@@ -5,6 +5,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 900);
 })
 
+document.getElementById("menuBtn").addEventListener("click", () => {
+    const menu = document.getElementById("navbarBurger");
+    if (menu.style.display === "block") {
+        menu.style.display = "none";
+    } else {
+        menu.style.display = "block";
+    }
+})
+
+
 const students = []
 let count = 0;
 let chosenTableRow = [];
@@ -101,10 +111,16 @@ document.getElementById("form").addEventListener("submit", (e) => {
     newOptionsEdit.addEventListener("click", (e) => {
         //TODO: add modal for edit
         //replaceChild
+        const row = e.target.closest("tr");
+        const checkbox = row.querySelector("input[type='checkbox']");
+        if (!checkbox.checked) return;
         document.getElementById("addEditStudent").style.display = "block";
         document.getElementById("newStudentH2").innerHTML = "Edit Student";
     })
     newOptionsDelete.addEventListener("click", (e) => {
+        const row = e.target.closest("tr");
+        const checkbox = row.querySelector("input[type='checkbox']");
+        if (!checkbox.checked) return;
         document.getElementById("deleteStudent").style.display = "block";
         chosenTableRow = [];
 
@@ -114,9 +130,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
                 chosenTableRow.push(checkbox.closest("tr"));
             }
         });
-        if (chosenTableRow.length == 0) {
-            chosenTableRow.push(e.target.closest("tr"));
-        }
+
 
         if (chosenTableRow.length == 1) {
             document.getElementById("warningMessage").textContent = `Are you sure you want to delete ${name}?`;

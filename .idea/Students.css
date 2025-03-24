@@ -12,6 +12,23 @@ header {
     display: flex;
     align-items: center;
 }
+#menuBtn {
+    margin-left: 15px;
+    background-color: #d6d6d6;
+    border-radius: 10px;
+    display: none;
+}
+#menu {
+    height: 35px;
+    width: 35px;
+    cursor: pointer;
+}
+
+#navbarBurger {
+    display: none;
+}
+
+
 h1 a {
     margin-left: 15px;
     color: white;
@@ -59,13 +76,13 @@ h1 a {
     display: none;
     position: absolute;
     top: 50px;
-}
-.profile:hover .dropdown {
-    display: block;
     background-color: gray;
     padding: 10px 20px;
     width: 80%;
     text-align: center;
+}
+.profile:hover .dropdown {
+    display: block;
 }
 .dropdown a {
     color: #e4e4e4;
@@ -133,7 +150,10 @@ h1 a {
     padding: 10px;
 }
 
-
+main {
+    margin-left: 15px;
+    margin-right: 15px;
+}
 
 aside {
     width: 20%;
@@ -142,8 +162,10 @@ aside {
 }
 
 .navbar ul{
-    padding-left: 20%;
     list-style-type: none;
+}
+.navbar li {
+    font-size: 24px;
 }
 .navbar a {
     color: black;
@@ -158,12 +180,12 @@ aside {
 
 #students {
     display: flex;
-    align-items: end;
+    justify-content: space-between;
+    align-items: center;
 }
 #students button {
-    margin-right: 10px;
-    margin-left: auto;
-    padding: 3 px 6px;
+    height: 30px;
+    width: 30px;
     font-size: 24px;
 }
 
@@ -174,9 +196,9 @@ table {
     width: 100%;
 }
 #table {
-    padding-right: 20px;
     overflow-x: scroll;
     width: 80%;
+    margin-right: 15px;
 }
 .status-on, .status-off {
     width: 10px;
@@ -193,6 +215,7 @@ td p {
 #pagination {
     display: flex;
     justify-content: center;
+    margin-top: 10px;
 }
 #pagination button {
     margin: 5px;
@@ -281,14 +304,79 @@ td p {
     aside {
         display: none;
     }
+    #table {
+        width: 100%;
+    }
+    #menu {
+        display: block;
+    }
 
     #profileName {
         display: none;
     }
-}
-@media (min-width: 768px) {
+
+    .modal-input {
+        flex-direction: column;
+    }
+    .modal-input input, .modal-input select {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+
+    #navbarBurger {
+        position: fixed;
+        top: 80px;
+        background-color: lightgray;
+        height: calc(100vh - 80px);
+        width: 100% !important;
+    }
+    #navbarBurger li {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+    }
+
+    .dropdownNotification {
+        left: -230px;
+    }
+    .dropdown {
+        top: 30px;
+        left: -100px;
+        width: 140px;
+    }
 
 }
-@media (min-width: 992px) {
+@media (max-width: 768px) {
+    aside {
+        display: none;
+    }
+    #table {
+        width: 100%;
+    }
+    #menuBtn {
+        display: block;
+    }
 
+    #navbarBurger {
+        position: fixed;
+        top: 80px;
+        background-color: lightgray;
+        height: calc(100vh - 80px);
+        width: 200px;
+    }
+    #navbarBurger li {
+        font-size: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 15px;
+    }
+}
+@media (max-width: 992px) {
+    .navbar li{
+        font-size: 18px;
+    }
 }
