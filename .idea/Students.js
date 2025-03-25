@@ -14,9 +14,6 @@ document.getElementById("menuBtn").addEventListener("click", () => {
     }
 });
 
-// if (document.getElementById("menuBtn").style.display === "none") {
-//     document.getElementById("burgerMenu").style.display = "none";
-// }
 window.addEventListener("resize", () => {
     if (window.innerWidth > 768) {
          document.getElementById("navbarBurger").style.display = "none";
@@ -53,11 +50,13 @@ document.getElementById("form").addEventListener("submit", (e) => {
     newTableDataCheckbox.appendChild(newLabel);
     newLabel.classList.add("idStudent");
     newLabel.textContent = count;
-    newLabel.style.display = "none";
+    newLabel.style.visibility = "hidden";
+    newLabel.setAttribute("for", count);
     const newCheckbox = document.createElement("input");
     newCheckbox.type = "checkbox";
     newTableDataCheckbox.appendChild(newCheckbox);
     newCheckbox.classList.add("checkbox");
+    newCheckbox.id = count;
 
     const newTableDataGroup = document.createElement("td");
     newStudent.appendChild(newTableDataGroup);
@@ -102,7 +101,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
         newStatus.classList.add("status-off");
         newStatus.src = "assets/status_off.png";
     }
-    newStatus.altText = "Status";
+    newStatus.alt = "Status";
     newStudent.appendChild(newStatus);
     newTableDataStatus.appendChild(newStatus);
 
@@ -124,6 +123,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
         if (!checkbox.checked) return;
         document.getElementById("addEditStudent").style.display = "block";
         document.getElementById("newStudentH2").innerHTML = "Edit Student";
+
     });
     newOptionsDelete.addEventListener("click", (e) => {
         const row = e.target.closest("tr");
