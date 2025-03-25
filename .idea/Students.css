@@ -214,7 +214,7 @@ tr {
 td p {
     margin: 0;
 }
-.idStudent, #idStudentMain {
+.idStudent, #idLabel {
     visibility: hidden;
     position: absolute;
 }
