@@ -133,7 +133,7 @@ h1 a {
     width: 30%
 }
 .humanProfile p {
-    margin: 0;/*TODO: change margins*/
+    margin: 0;
 }
 .humanMessage {
     background-color: #fafafa;

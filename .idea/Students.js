@@ -14,6 +14,14 @@ document.getElementById("menuBtn").addEventListener("click", () => {
     }
 });
 
+// if (document.getElementById("menuBtn").style.display === "none") {
+//     document.getElementById("burgerMenu").style.display = "none";
+// }
+window.addEventListener("resize", () => {
+    if (window.innerWidth > 768) {
+         document.getElementById("navbarBurger").style.display = "none";
+    }
+});
 
 const students = [];
 let count = 0;
