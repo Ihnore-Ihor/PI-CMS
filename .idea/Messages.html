@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Internet Programming</title>
+    <link rel="stylesheet" href="Students.css">
+    <link rel="icon" type="image/gif" href="assets/isaac.gif">
+</head>
+<body>
+<header>
+  <div class="burgerMenu">
+    <button id="menuBtn">
+      <img src="assets/Menu.png" alt="Burger menu" id="menu">
+    </button>
+    <nav class="navbar" id="navbarBurger">
+      <ul>
+        <li><a href="Dashboard.html">Dashboard</a></li>
+        <li><a href="Students.html"><b>Students</b></a></li>
+        <li><a href="Tasks.html" >Tasks</a></li>
+      </ul>
+    </nav>
+  </div>
+  <h1><a href="Students.html" title="Students page">CMS</a></h1>
+  <div class="right-header">
+    <div class="notification">
+      <a href="Messages.html">
+        <img id="bell" src="assets/bell.png" alt="Bell">
+        <img id="notification-status" src="assets/notification.png" alt="notification status">
+      </a>
+      <div class="dropdownNotification">
+        <div class="message" id="human1">
+          <div class="humanProfile">
+            <img src="assets/Amethyst.png" alt="profile">
+            <p>Amethyst</p>
+          </div>
+          <div class="humanMessage">
+            <p>Hi guys</p>
+          </div>
+        </div>
+        <div class="message" id="human2">
+          <div class="humanProfile">
+            <img src="assets/Garnet.png" alt="profile">
+            <p>Garnet</p>
+          </div>
+          <div class="humanMessage">
+            <p>Hello</p>
+          </div>
+        </div>
+        <div class="message" id="human3">
+          <div class="humanProfile">
+            <img src="assets/Pearl.png" alt="profile">
+            <p>Pearl</p>
+          </div>
+          <div class="humanMessage">
+            <p>Hi</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="profile" title="Profile">
+      <div class="account-container">
+        <img src="assets/user.png" alt="user" width="32" height="32">
+        <h2 id="profileName">Ihor Braichenko</h2>
+      </div>
+
+      <div class="dropdown">
+        <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Profile</a>
+        <br>
+        <a href="">Log out</a>
+      </div>
+    </div>
+  </div>
+
+</header>
+
+<aside>
+  <nav class="navbar">
+    <ul>
+      <li><a href="Dashboard.html">Dashboard</a></li>
+      <li><a href="Students.html"><b>Students</b></a></li>
+      <li><a href="Tasks.html" >Tasks</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+  <div id="students">
+    <h2>Messages</h2>
+  </div>
+</main>
+<script src="Messages.js"></script>
+</body>
+</html>

@@ -7,11 +7,28 @@ body {
 }
 
 header {
-    background-color: darkgray;
+    background-color: #8c8c8c;
     color: white;
     display: flex;
     align-items: center;
 }
+#menuBtn {
+    margin-left: 15px;
+    background-color: #d6d6d6;
+    border-radius: 10px;
+    display: none;
+}
+#menu {
+    height: 35px;
+    width: 35px;
+    cursor: pointer;
+}
+
+#navbarBurger {
+    display: none;
+}
+
+
 h1 a {
     margin-left: 15px;
     color: white;
@@ -19,9 +36,6 @@ h1 a {
 }
 
 #bell {
-    animation-name: skew;
-    animation-duration: 3s;
-    animation-iteration-count: 1;
     position: absolute;
     top: -16px;
     right: 0px;
@@ -36,6 +50,8 @@ h1 a {
     position: absolute;
     top: -15px;
     left: -12px;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
 }
 
 @keyframes skew {
@@ -60,13 +76,13 @@ h1 a {
     display: none;
     position: absolute;
     top: 50px;
-}
-.profile:hover .dropdown {
-    display: block;
     background-color: gray;
     padding: 10px 20px;
     width: 80%;
     text-align: center;
+}
+.profile:hover .dropdown {
+    display: block;
 }
 .dropdown a {
     color: #e4e4e4;
@@ -80,7 +96,64 @@ h1 a {
     background-color: #b3b3b3;
 }
 
+.dropdownNotification img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
 
+.dropdownNotification {
+    position: absolute;
+    background-color: gray;
+    padding: 8px;
+    top: 15px;
+    left: -30px;
+    width: 240px;
+    display: none;
+}
+.notification:hover .dropdownNotification {
+    display: block;
+}
+.message {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+    background-color: #c5c5c5;
+    color: black;
+    margin: 5px;
+    border-radius: 5px;
+    padding-right: 0;
+}
+.humanProfile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: 5px;
+    margin-right: 5px;
+    width: 30%
+}
+.humanProfile p {
+    margin: 0;
+}
+.humanMessage {
+    background-color: #fafafa;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 60%;
+    margin-right: 5px;
+    border-radius: 5px;
+}
+.humanMessage p {
+    margin: 0;
+    padding: 10px;
+}
+
+main {
+    margin-left: 15px;
+    margin-right: 15px;
+}
 
 aside {
     width: 20%;
@@ -89,8 +162,10 @@ aside {
 }
 
 .navbar ul{
-    padding-left: 20%;
     list-style-type: none;
+}
+.navbar li {
+    font-size: 24px;
 }
 .navbar a {
     color: black;
@@ -105,12 +180,12 @@ aside {
 
 #students {
     display: flex;
-    align-items: end;
+    justify-content: space-between;
+    align-items: center;
 }
 #students button {
-    margin-right: 10px;
-    margin-left: auto;
-    padding: 3 px 6px;
+    height: 30px;
+    width: 30px;
     font-size: 24px;
 }
 
@@ -120,24 +195,195 @@ table {
     float: left;
     width: 100%;
 }
+table td, table th{
+    border: 1px solid black;
+}
 #table {
-    padding-right: 20px;
     overflow-x: scroll;
     width: 80%;
+    margin-right: 15px;
 }
-#status-on, #status-off {
+.status-on, .status-off {
     width: 10px;
     height: 10px;
 }
-tr:nth-child(even) #status-on {
-    display: none;
+
+tr {
+    text-align: center;
 }
-tr:nth-child(odd) #status-off {
-    display: none;
+td p {
+    margin: 0;
+}
+.idStudent, #idLabel {
+    visibility: hidden;
+    position: absolute;
 }
 
-@media screen and (max-width:500px) {
-    .navbar {
+#pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+#pagination button {
+    margin: 5px;
+}
+
+.modal-window {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.modal-content {
+    transform: translate(-50%, -50%);
+    background-color: white;
+    position: absolute;
+    width: 50%;
+    top: 50%;
+    left: 50%;
+    border: black solid 1px;
+    border-radius: 5px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+}
+.modal-header h2 {
+    margin: 8px;
+}
+.close {
+    width: 50%;
+    margin-top: 8px;
+    margin-bottom: 0;
+    margin-right: 8px;
+    font-size: 22px;
+}
+
+.modal-body form{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px;
+}
+
+.modal-input {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px;
+}
+.modal-input input, .modal-input select {
+    width: 50%;
+    padding: 4px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+    margin-right: 8px;
+}
+#cancel {
+    margin-right: 8px;
+}
+
+#cancelDelete {
+    margin-right: 8px;
+}
+
+.modal-body p {
+    margin: 8px;
+}
+
+
+@media screen and (max-width: 576px) {
+    aside {
         display: none;
+    }
+    #table {
+        width: 100%;
+    }
+    #menu {
+        display: block;
+    }
+
+    #profileName {
+        display: none;
+    }
+
+    .modal-input {
+        flex-direction: column;
+    }
+    .modal-input input, .modal-input select {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+
+    #navbarBurger {
+        position: fixed;
+        top: 80px;
+        background-color: lightgray;
+        height: calc(100vh - 80px);
+        width: 100% !important;
+    }
+    #navbarBurger li {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+    }
+
+    .dropdownNotification {
+        left: -230px;
+    }
+    .dropdown {
+        top: 30px;
+        left: -100px;
+        width: 140px;
+    }
+
+}
+@media (max-width: 768px) {
+    aside {
+        display: none;
+    }
+    #table {
+        width: 100%;
+    }
+    #menuBtn {
+        display: block;
+    }
+
+    #navbarBurger {
+        position: fixed;
+        top: 80px;
+        background-color: lightgray;
+        height: calc(100vh - 80px);
+        width: 200px;
+    }
+    #navbarBurger li {
+        font-size: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 15px;
+    }
+}
+@media (max-width: 992px) {
+    .navbar li{
+        font-size: 18px;
     }
 }
