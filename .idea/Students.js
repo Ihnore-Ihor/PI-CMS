@@ -23,6 +23,7 @@ window.addEventListener("resize", () => {
 const students = [];
 let count = 0;
 let chosenTableRow = [];
+let studentToEdit = null;
 
 document.getElementById("addStudent").addEventListener("click", () => {
     document.getElementById("addEditStudent").style.display = "block";
@@ -40,131 +41,166 @@ document.getElementById("form").addEventListener("submit", (e) => {
     e.preventDefault();
     if (e.submitter != document.getElementById("confirm")) return;
 
-    const newStudent = document.createElement("tr");
-    newStudent.classList.add("Students");
-    document.getElementById("tableStudents").appendChild(newStudent);
+    if (studentToEdit == null) {
+        const newStudent = document.createElement("tr");
+        newStudent.classList.add("Students");
+        document.getElementById("tableStudents").appendChild(newStudent);
 
-    const newTableDataCheckbox = document.createElement("td");
-    newStudent.appendChild(newTableDataCheckbox);
-    const newLabel = document.createElement("label");
-    newTableDataCheckbox.appendChild(newLabel);
-    newLabel.classList.add("idStudent");
-    newLabel.textContent = count;
-    newLabel.style.visibility = "hidden";
-    newLabel.setAttribute("for", count);
-    const newCheckbox = document.createElement("input");
-    newCheckbox.type = "checkbox";
-    newTableDataCheckbox.appendChild(newCheckbox);
-    newCheckbox.classList.add("checkbox");
-    newCheckbox.id = count;
+        const newTableDataCheckbox = document.createElement("td");
+        newStudent.appendChild(newTableDataCheckbox);
+        const newLabel = document.createElement("label");
+        newTableDataCheckbox.appendChild(newLabel);
+        newLabel.classList.add("idStudent");
+        newLabel.textContent = count;
+        newLabel.style.visibility = "hidden";
+        newLabel.setAttribute("for", count);
+        const newCheckbox = document.createElement("input");
+        newCheckbox.type = "checkbox";
+        newTableDataCheckbox.appendChild(newCheckbox);
+        newCheckbox.classList.add("checkbox");
+        newCheckbox.id = count;
 
-    const newTableDataGroup = document.createElement("td");
-    newStudent.appendChild(newTableDataGroup);
-    let group = document.getElementById("group").value;
-    const newGroup = document.createElement("p");
-    newGroup.textContent = group;
-    newStudent.appendChild(newGroup);
-    newTableDataGroup.appendChild(newGroup);
+        const newTableDataGroup = document.createElement("td");
+        newStudent.appendChild(newTableDataGroup);
+        let group = document.getElementById("group").value;
+        const newGroup = document.createElement("p");
+        newGroup.textContent = group;
+        newStudent.appendChild(newGroup);
+        newTableDataGroup.appendChild(newGroup);
 
-    const newTableDataName = document.createElement("td");
-    newStudent.appendChild(newTableDataName);
-    let name = document.getElementById("firstName").value + " " + document.getElementById("lastName").value;
-    const newName = document.createElement("p");
-    newName.textContent = name;
-    newStudent.appendChild(newName);
-    newTableDataName.appendChild(newName);
+        const newTableDataName = document.createElement("td");
+        newStudent.appendChild(newTableDataName);
+        let name = document.getElementById("firstName").value + " " + document.getElementById("lastName").value;
+        const newName = document.createElement("p");
+        newName.textContent = name;
+        newStudent.appendChild(newName);
+        newTableDataName.appendChild(newName);
+        let firstName = document.getElementById("firstName").value;
+        let lastName = document.getElementById("lastName").value;
 
-    const newTableDataGender = document.createElement("td");
-    newStudent.appendChild(newTableDataGender);
-    let gender = document.getElementById("gender").value;
-    const newGender = document.createElement("p");
-    newGender.textContent = gender;
-    newStudent.appendChild(newGender);
-    newTableDataGender.appendChild(newGender);
+        const newTableDataGender = document.createElement("td");
+        newStudent.appendChild(newTableDataGender);
+        let gender = document.getElementById("gender").value;
+        const newGender = document.createElement("p");
+        newGender.textContent = gender;
+        newStudent.appendChild(newGender);
+        newTableDataGender.appendChild(newGender);
 
-    const newTableDataDate = document.createElement("td");
-    newStudent.appendChild(newTableDataDate);
-    let dateOfBirth = document.getElementById("dateOfBirth").value;
-    const newDate = document.createElement("p");
-    newDate.textContent = dateOfBirth;
-    newStudent.appendChild(newDate);
-    newTableDataDate.appendChild(newDate);
+        const newTableDataDate = document.createElement("td");
+        newStudent.appendChild(newTableDataDate);
+        let dateOfBirth = document.getElementById("dateOfBirth").value;
+        const newDate = document.createElement("p");
+        newDate.textContent = dateOfBirth;
+        newStudent.appendChild(newDate);
+        newTableDataDate.appendChild(newDate);
 
-    const newTableDataStatus = document.createElement("td");
-    newStudent.appendChild(newTableDataStatus);
-    let status = (count%2 == 0) ? true : false;
-    const newStatus = document.createElement("img");
-    if (status) {
-        newStatus.classList.add("status-on");
-        newStatus.src = "assets/status_on.png";
-    } else {
-        newStatus.classList.add("status-off");
-        newStatus.src = "assets/status_off.png";
-    }
-    newStatus.alt = "Status";
-    newStudent.appendChild(newStatus);
-    newTableDataStatus.appendChild(newStatus);
+        const newTableDataStatus = document.createElement("td");
+        newStudent.appendChild(newTableDataStatus);
+        let status = (count % 2 == 0) ? true : false;
+        const newStatus = document.createElement("img");
+        if (status) {
+            newStatus.classList.add("status-on");
+            newStatus.src = "assets/status_on.png";
+        } else {
+            newStatus.classList.add("status-off");
+            newStatus.src = "assets/status_off.png";
+        }
+        newStatus.alt = "Status";
+        newStudent.appendChild(newStatus);
+        newTableDataStatus.appendChild(newStatus);
 
-    const newTableDataOptions = document.createElement("td");
-    newStudent.appendChild(newTableDataOptions);
-    const newOptionsEdit = document.createElement("button");
-    newOptionsEdit.id = "optionsEdit";
-    newOptionsEdit.textContent = "edit";
-    const newOptionsDelete = document.createElement("button");
-    newOptionsDelete.id = "optionsDelete";
-    newOptionsDelete.textContent = "delete";
-    newTableDataOptions.appendChild(newOptionsEdit);
-    newTableDataOptions.appendChild(newOptionsDelete);
-    newOptionsEdit.addEventListener("click", (e) => {
-        //TODO: add modal for edit
-        //replaceChild
-        const row = e.target.closest("tr");
-        const checkbox = row.querySelector("input[type='checkbox']");
-        if (!checkbox.checked) return;
-        document.getElementById("addEditStudent").style.display = "block";
-        document.getElementById("newStudentH2").innerHTML = "Edit Student";
+        const newTableDataOptions = document.createElement("td");
+        newStudent.appendChild(newTableDataOptions);
+        const newOptionsEdit = document.createElement("button");
+        newOptionsEdit.id = "optionsEdit";
+        newOptionsEdit.textContent = "edit";
+        const newOptionsDelete = document.createElement("button");
+        newOptionsDelete.id = "optionsDelete";
+        newOptionsDelete.textContent = "delete";
+        newTableDataOptions.appendChild(newOptionsEdit);
+        newTableDataOptions.appendChild(newOptionsDelete);
+        newOptionsEdit.addEventListener("click", (e) => {
+            //TODO: add modal for edit
+            //replaceChild
+            const row = e.target.closest("tr");
+            const checkbox = row.querySelector("input[type='checkbox']");
+            if (!checkbox.checked) return;
+            document.getElementById("addEditStudent").style.display = "block";
+            document.getElementById("newStudentH2").innerHTML = "Edit Student";
+
+            const idInTableStudent = parseInt(row.querySelector("label").textContent);
+            studentToEdit = students.find(student => student.id === idInTableStudent);
+            console.log(student);
+            document.getElementById("group").value = student.group;
+            document.getElementById("firstName").value = student.firstName;
+            document.getElementById("lastName").value = student.lastName;
+            document.getElementById("gender").value = student.gender;
+            document.getElementById("dateOfBirth").value = student.dateOfBirth;
+        });
+        newOptionsDelete.addEventListener("click", (e) => {
+            const row = e.target.closest("tr");
+            const checkbox = row.querySelector("input[type='checkbox']");
+            if (!checkbox.checked) return;
+            document.getElementById("deleteStudent").style.display = "block";
+            chosenTableRow = [];
+
+            const checkboxes = document.querySelectorAll(".checkbox");
+            checkboxes.forEach((checkbox) => {
+                if (checkbox.checked) {
+                    chosenTableRow.push(checkbox.closest("tr"));
+                }
+            });
 
 
-    });
-    newOptionsDelete.addEventListener("click", (e) => {
-        const row = e.target.closest("tr");
-        const checkbox = row.querySelector("input[type='checkbox']");
-        if (!checkbox.checked) return;
-        document.getElementById("deleteStudent").style.display = "block";
-        chosenTableRow = [];
-
-        const checkboxes = document.querySelectorAll(".checkbox");
-        checkboxes.forEach((checkbox) => {
-            if (checkbox.checked) {
-                chosenTableRow.push(checkbox.closest("tr"));
+            if (chosenTableRow.length == 1) {
+                document.getElementById("warningMessage").textContent = `Are you sure you want to delete ${name}?`;
+            } else if (chosenTableRow.length > 1) {
+                document.getElementById("warningMessage").textContent = `Are you sure you want to delete those students?`;
             }
         });
 
+        const student = {
+            group: group,
+            firstName: firstName,
+            lastName: lastName,
+            gender: gender,
+            dateOfBirth: dateOfBirth,
+            status: status,
+            id: count
+        };
+        students.push(student);
 
-        if (chosenTableRow.length == 1) {
-            document.getElementById("warningMessage").textContent = `Are you sure you want to delete ${name}?`;
-        } else if (chosenTableRow.length > 1) {
-            document.getElementById("warningMessage").textContent = `Are you sure you want to delete those students?`;
-        }
-    });
+        count++;
+        document.getElementById("addEditStudent").style.display = "none";
+        document.getElementById("group").value = "";
+        document.getElementById("firstName").value = "";
+        document.getElementById("lastName").value = "";
+        document.getElementById("gender").value = "Male";
+        document.getElementById("dateOfBirth").value = "";
+    } else {
+        const row = document.querySelector(`#tableStudents label[for="${studentToEdit.id}"]`).closest("tr");
 
-    const student = {
-        group: group,
-        name: name,
-        gender: gender,
-        dateOfBirth: dateOfBirth,
-        status: status,
-        id: count
-    };
-    students.push(student);
+        studentToEdit.group = document.getElementById("group").value;
+        studentToEdit.firstName = document.getElementById("firstName").value;
+        studentToEdit.lastName = document.getElementById("lastName").value;
+        studentToEdit.gender = document.getElementById("gender").value;
+        studentToEdit.dateOfBirth = document.getElementById("dateOfBirth").value;
 
-    count++;
-    document.getElementById("addEditStudent").style.display = "none";
-    document.getElementById("group").value = "";
-    document.getElementById("firstName").value = "";
-    document.getElementById("lastName").value = "";
-    document.getElementById("gender").value = "Male";
-    document.getElementById("dateOfBirth").value = "";
+        row.children[1].querySelector("p").textContent = studentToEdit.group;
+        row.children[2].querySelector("p").textContent = studentToEdit.firstName + " " + studentToEdit.lastName;
+        row.children[3].querySelector("p").textContent = studentToEdit.gender;
+        row.children[4].querySelector("p").textContent = studentToEdit.dateOfBirth;
+
+        document.getElementById("addEditStudent").style.display = "none";
+
+        document.getElementById("group").value = "";
+        document.getElementById("firstName").value = "";
+        document.getElementById("lastName").value = "";
+        document.getElementById("gender").value = "Male";
+        document.getElementById("dateOfBirth").value = "";
+
+        studentToEdit = null;
+    }
 });
 
 document.getElementById("cancel").addEventListener("click", (e) => {
