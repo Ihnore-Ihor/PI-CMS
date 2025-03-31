@@ -124,6 +124,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
         document.getElementById("addEditStudent").style.display = "block";
         document.getElementById("newStudentH2").innerHTML = "Edit Student";
 
+
     });
     newOptionsDelete.addEventListener("click", (e) => {
         const row = e.target.closest("tr");
