@@ -40,6 +40,7 @@ document.getElementById("idStudentMain").addEventListener("change", (e) => {
 document.getElementById("form").addEventListener("submit", (e) => {
     e.preventDefault();
     if (e.submitter != document.getElementById("confirm")) return;
+    if ([...document.querySelectorAll(".input")].some(e => e.classList.contains("error"))) return;
 
     if (studentToEdit == null) {
         const newStudent = document.createElement("tr");
@@ -120,8 +121,6 @@ document.getElementById("form").addEventListener("submit", (e) => {
         newTableDataOptions.appendChild(newOptionsEdit);
         newTableDataOptions.appendChild(newOptionsDelete);
         newOptionsEdit.addEventListener("click", (e) => {
-            //TODO: add modal for edit
-            //replaceChild
             const row = e.target.closest("tr");
             const checkbox = row.querySelector("input[type='checkbox']");
             if (!checkbox.checked) return;
@@ -130,7 +129,7 @@ document.getElementById("form").addEventListener("submit", (e) => {
 
             const idInTableStudent = parseInt(row.querySelector("label").textContent);
             studentToEdit = students.find(student => student.id === idInTableStudent);
-            console.log(student);
+            console.log(JSON.stringify(student));
             document.getElementById("group").value = student.group;
             document.getElementById("firstName").value = student.firstName;
             document.getElementById("lastName").value = student.lastName;
@@ -191,6 +190,8 @@ document.getElementById("form").addEventListener("submit", (e) => {
         row.children[3].querySelector("p").textContent = studentToEdit.gender;
         row.children[4].querySelector("p").textContent = studentToEdit.dateOfBirth;
 
+        console.log("Changed to:");
+        console.log(JSON.stringify(studentToEdit));
         document.getElementById("addEditStudent").style.display = "none";
 
         document.getElementById("group").value = "";
@@ -220,6 +221,56 @@ document.getElementById("close").addEventListener("click", (e) => {
     document.getElementById("lastName").value = "";
     document.getElementById("gender").value = "Male";
     document.getElementById("dateOfBirth").value = "";
+});
+
+
+document.getElementById("group").addEventListener("change", (e) => {
+    e.target.parentElement.classList.remove("error");
+    if(!e.target.value) {
+        e.target.parentElement.classList.add("error");
+    }
+});
+
+document.getElementById("firstName").addEventListener("change", (e) => {
+    e.target.parentElement.classList.remove("error");
+    const validationPatterns = {
+        name: /^[A-Za-zА-Яа-я]{2,50}$/,
+    };
+    if(!validationPatterns.name.test(e.target.value)) {
+        e.target.parentElement.classList.add("error");
+    }
+});
+
+document.getElementById("lastName").addEventListener("change", (e) => {
+    e.target.parentElement.classList.remove("error");
+    const validationPatterns = {
+        name: /^[A-Za-zА-Яа-я]{2,50}$/,
+    };
+    if(!validationPatterns.name.test(e.target.value)) {
+        e.target.parentElement.classList.add("error");
+    }
+});
+
+document.getElementById("gender").addEventListener("change", (e) => {
+    e.target.parentElement.classList.remove("error");
+    if(!e.target.value) {
+        e.target.parentElement.classList.add("error");
+    }
+});
+
+document.getElementById("dateOfBirth").addEventListener("change", (e) => {
+    e.target.parentElement.classList.remove("error");
+    const validationPatterns = {
+        date: /^\d{4}-\d{2}-\d{2}$/
+    };
+    if(!validationPatterns.date.test(e.target.value)) {
+        e.target.parentElement.classList.add("error");
+    }
+    let birthDate = new Date(e.target.value);
+    let today = new Date();
+    if (birthDate >= today) {
+        e.target.parentElement.classList.add("error");
+    }
 });
 
 
