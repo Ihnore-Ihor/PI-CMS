@@ -244,7 +244,7 @@ document.getElementById("firstName").addEventListener("change", (e) => {
 document.getElementById("lastName").addEventListener("change", (e) => {
     e.target.parentElement.classList.remove("error");
     const validationPatterns = {
-        name: /^[A-Za-zА-Яа-я'\-]{2,50}@friend$/,
+        name: /^[A-Za-zА-Яа-я'\-]{2,50}$/,
     };
     if(!validationPatterns.name.test(e.target.value)) {
         e.target.parentElement.classList.add("error");
