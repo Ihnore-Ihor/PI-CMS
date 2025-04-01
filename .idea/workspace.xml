@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="544e1b82-2906-4412-942a-26182cbb7488" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/PI-CMS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PI-CMS.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/idea/sw.js" beforeDir="false" afterPath="$PROJECT_DIR$/idea/sw.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

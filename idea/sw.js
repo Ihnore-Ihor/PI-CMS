@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-cms-cache-v4";
+const CACHE_NAME = "pwa-cms-cache-v5";
 const ASSETS = [
     "/PI-CMS/idea/Dashboard.js",
     "/PI-CMS/idea/Dashboard.html",
