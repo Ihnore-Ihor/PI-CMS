@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="544e1b82-2906-4412-942a-26182cbb7488" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Messages.html" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Messages.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Students.html" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Tasks.html" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Tasks.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/PI-CMS.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PI-CMS.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/idea/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,12 +24,12 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "Ihnore-Ihor"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Ihnore-Ihor&quot;
   }
-}]]></component>
+}</component>
   <component name="GitLabMergeRequestFiltersHistory">{
   &quot;lastFilter&quot;: {
     &quot;state&quot;: &quot;OPENED&quot;,
@@ -48,12 +46,12 @@
     &quot;second&quot;: &quot;f7ebc167-128e-4d07-813b-c9b55833f130&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "git@github.com:Ihnore-Ihor/PI-CMS.git",
-    "accountId": "a3708237-3fa0-4aba-955d-ea85a5856e3e"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;git@github.com:Ihnore-Ihor/PI-CMS.git&quot;,
+    &quot;accountId&quot;: &quot;a3708237-3fa0-4aba-955d-ea85a5856e3e&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -81,6 +79,9 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/.idea" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/.idea" />
     </key>
   </component>
