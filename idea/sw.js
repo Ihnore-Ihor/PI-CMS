@@ -23,7 +23,6 @@ const ASSETS = [
     "/PI-CMS/idea/assets/status_off.png",
     "/PI-CMS/idea/assets/status_on.png",
     "/PI-CMS/idea/assets/user.png",
-    "/PI-CMS/idea/assets/logo-192.png"
 ];
 
 // Встановлення Service Worker та кешування файлів
