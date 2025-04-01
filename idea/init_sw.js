@@ -3,7 +3,7 @@ const init_or_not_init = true
 if(init_or_not_init) {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/PI-CMS/.idea/sw.js')
+            navigator.serviceWorker.register('/PI-CMS/idea/sw.js')
                 .then(registration => {
                     console.log('Service Worker registered:', registration);
                 })
