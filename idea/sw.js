@@ -2,7 +2,7 @@ const CACHE_NAME = "pwa-cms-cache-v1";
 const ASSETS = [
     "/PI-CMS/idea/Dashboard.js",
     "/PI-CMS/idea/Dashboard.html",
-    "/PI-CMS/idea/index.html",
+    "/PI-CMS/idea/Students.html",
     "/PI-CMS/idea/init_sw.js",
     "/PI-CMS/idea/manifest.json",
     "/PI-CMS/idea/Messages.html",
