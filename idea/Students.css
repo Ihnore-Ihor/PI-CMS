@@ -283,9 +283,27 @@ td p {
     justify-content: space-between;
     margin: 4px;
 }
-.modal-input input, .modal-input select {
-    width: 50%;
+.input input, .input select {
+    width: 100%;
     padding: 4px;
+}
+.input {
+    display: flex;
+    flex-direction: column;
+    width: 70%;
+}
+.errorMessage {
+    color: red;
+    visibility: hidden;
+    font-size: 12px;
+    margin: 1px;
+    padding: 0;
+}
+.error input, .error select{
+    border: 1px solid crimson;
+}
+.error p {
+    visibility: visible;
 }
 
 .modal-footer {
@@ -302,8 +320,12 @@ td p {
     margin-right: 8px;
 }
 
-.modal-body p {
+#warningMessage {
     margin: 8px;
+}
+
+#login_btn:hover {
+    cursor: pointer;
 }
 
 
@@ -329,6 +351,10 @@ td p {
         width: 100%;
         margin-bottom: 4px;
     }
+    .input {
+        width: 100%;
+    }
+
 
     #navbarBurger {
         position: fixed;

@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Internet Programming</title>
     <link rel="stylesheet" href="Students.css">
-    <link rel="icon" type="image/gif" href="assets/isaac.gif">
+    <link rel="icon" type="image/png" href="assets/isaac.png">
+    <link rel="manifest" href="/PI-CMS/idea/manifest.json" />
 </head>
 <body>
 <header>
@@ -67,7 +68,7 @@
             <div class="dropdown">
                 <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Profile</a>
                 <br>
-                <a href="">Log out</a>
+                <a href="" id="logout_btn">Log out</a>
             </div>
         </div>
     </div>
@@ -106,11 +107,11 @@
         </table>
     </div>
     <div id="pagination">
-        <button id="previousPage"><b>&laquo;</b></button>
-        <button id="page1"><b>1</b></button>
-        <button id="page2"><b>2</b></button>
-        <button id="page3"><b>3</b></button>
-        <button id="nextPage"><b>&raquo;</b></button>
+        <button id="previousPage" class="tableStudents_pagination_btn"><b>&laquo;</b></button>
+        <button id="page1" class="tableStudents_pagination_btn"><b>1</b></button>
+        <button id="page2" class="tableStudents_pagination_btn"><b>2</b></button>
+        <button id="page3" class="tableStudents_pagination_btn"><b>3</b></button>
+        <button id="nextPage" class="tableStudents_pagination_btn"><b>&raquo;</b></button>
     </div>
 
     <div class="modal-window" id="addEditStudent">
@@ -125,47 +126,62 @@
                 <div class="modal-body">
                     <div class="modal-input">
                         <label for="group">Group</label>
-                        <select id="group" name="Group" required>
-                            <option value="">Select a group</option>
-                            <option value="PZ-22">PZ-22</option>
-                            <option value="PZ-21">PZ-21</option>
-                            <option value="PZ-23">PZ-23</option>
-                            <option value="PZ-24">PZ-24</option>
-                            <option value="PZ-25">PZ-25</option>
-                            <option value="PZ-26">PZ-26</option>
-                            <option value="PZ-11">PZ-11</option>
-                            <option value="PZ-12">PZ-12</option>
-                            <option value="PZ-13">PZ-13</option>
-                            <option value="PZ-14">PZ-14</option>
-                            <option value="PZ-15">PZ-15</option>
-                            <option value="PZ-16">PZ-16</option>
-                            <option value="PZ-17">PZ-17</option>
-                        </select>
+                        <div class="input">
+                            <select id="group" name="Group" required>
+                                <option value="">Select a group</option>
+                                <option value="PZ-22">PZ-22</option>
+                                <option value="PZ-21">PZ-21</option>
+                                <option value="PZ-23">PZ-23</option>
+                                <option value="PZ-24">PZ-24</option>
+                                <option value="PZ-25">PZ-25</option>
+                                <option value="PZ-26">PZ-26</option>
+                                <option value="PZ-11">PZ-11</option>
+                                <option value="PZ-12">PZ-12</option>
+                                <option value="PZ-13">PZ-13</option>
+                                <option value="PZ-14">PZ-14</option>
+                                <option value="PZ-15">PZ-15</option>
+                                <option value="PZ-16">PZ-16</option>
+                                <option value="PZ-17">PZ-17</option>
+                            </select>
+                            <p class="errorMessage" id="errorMessageGroup">Please select group.</p>
+                        </div>
                     </div>
 
                     <div class="modal-input">
                         <label for="firstName">First Name</label>
-                        <input type="text" id="firstName" name="FirstName" required>
+                        <div class="input">
+                            <input type="text" id="firstName" name="FirstName" required>
+                            <p class="errorMessage" id="errorMessageFirstName">Please enter valid name (A-z, А-я, 2-50 characters).</p>
+                        </div>
                     </div>
 
                     <div class="modal-input">
                         <label for="lastName">Last Name</label>
-                        <input type="text" id="lastName" name="LastName" required>
+                        <div class="input">
+                            <input type="text" id="lastName" name="LastName" required>
+                            <p class="errorMessage" id="errorMessageLastName">Please enter valid name (A-z, А-я, 2-50 characters).</p>
+                        </div>
                     </div>
 
                     <div class="modal-input">
                         <label for="gender">Gender</label>
-                        <select id="gender" name="Gender" required>
-                            <option value="">Select student's gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <div class="input">
+                            <select id="gender" name="Gender" required>
+                                <option value="">Select student's gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <p class="errorMessage" id="errorMessageGender">Please select gender.</p>
+                        </div>
                     </div>
 
                     <div class="modal-input">
                         <label for="dateOfBirth">Birthday</label>
-                        <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                        <div class="input">
+                            <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                            <p class="errorMessage" id="errorMessageDateOfBirth">Date of birth cannot be in the future.</p>
+                        </div>
                     </div>
                 </div>
                 <hr>
@@ -197,5 +213,7 @@
     </div>
 </main>
 <script src="Students.js"></script>
+<script src="/PI-CMS/idea/init_sw.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>
