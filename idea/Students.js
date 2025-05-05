@@ -17,12 +17,53 @@ const validationPatterns = {
     date: /^\d{4}-\d{2}-\d{2}$/,
 };
 
+function tokenExpired() {
+    sessionStorage.removeItem("auth_token");
+    sessionStorage.removeItem("user");
+    window.location.href = "/PI-Labs/auth/login.html";
+}
+
+async function logoutUser() {
+    const token = sessionStorage.getItem("auth_token");
+    if (!token) window.location.href = "login.html";
+
+    try {
+        await fetch(`${BASE_API_URL}/auth/logout`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        });
+
+        sessionStorage.removeItem("auth_token");
+        sessionStorage.removeItem("user");
+        window.location.href = "login.html";
+    } catch (error) {
+        console.error("Logout error:", error);
+    }
+}
+
 async function fetchStudents(page) {
     try {
+        const token = sessionStorage.getItem("auth_token");
+        console.log(token);
+        if (!token) {
+            window.location.href = "login.html";
+            return { total: 0, perPage: studentsPerPage };
+        }
+
         const response = await fetch(`${BASE_API_URL}/students/?page=${page}`, {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
         });
+        if (response.status === 401) {
+            tokenExpired();
+            return { total: 0, perPage: studentsPerPage };
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (!data.success) throw new Error(data.error || 'Failed to fetch students');
@@ -194,6 +235,28 @@ function clearErrors() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Set up user display and logout
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user) {
+        const profileUsername = document.getElementById("profileName");
+        if (profileUsername) {
+            profileUsername.textContent = `${user.first_name} ${user.last_name}`;
+        } else {
+            console.warn("Element with ID 'profileName' not found in DOM");
+        }
+    } else {
+        window.location.href = "login.html";
+    }
+
+    const logoutBtn = document.getElementById("logout_btn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+            logoutUser();
+        });
+    } else {
+        console.warn("Element with ID 'logout_btn' not found in DOM");
+    }
+
     // Notification animation
     const bell = document.getElementById("bell");
     if (bell) bell.style.animation = "skew 3s 1";
@@ -252,6 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteBtn = document.getElementById("delete");
     if (deleteBtn) {
         deleteBtn.addEventListener("click", async () => {
+            const token = sessionStorage.getItem("auth_token");
             const ids = selectedRows.map(
                 (row) => parseInt(row.querySelector(".idStudent").textContent)
             );
@@ -259,8 +323,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const deletePromises = ids.map(id =>
                     fetch(`${BASE_API_URL}/students/${id}`, {
                         method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                    }).then(response => response.json())
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                    }).then(response => {
+                        if (response.status === 401) {
+                            tokenExpired();
+                            return { success: false };
+                        }
+                        response.json()
+                    })
                 );
                 const results = await Promise.all(deletePromises);
                 const failed = results.find(result => !result.success);
@@ -372,13 +445,21 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             try {
+                const token = sessionStorage.getItem("auth_token");
                 const method = studentToEdit ? "PUT" : "POST";
                 const url = studentToEdit ? `${BASE_API_URL}/students/${studentToEdit.id}` : `${BASE_API_URL}/students/`;
                 const response = await fetch(url, {
                     method,
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(studentData),
                 });
+                if (response.status === 401) {
+                    tokenExpired();
+                    return;
+                }
                 const result = await response.json();
                 if (result.success) {
                     updateTable();

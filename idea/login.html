@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login CMS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="Students.css">
+    <link rel="icon" type="image/png" href="assets/pink crocodile with hat.png">
+    <link rel="manifest" href="/PI-CMS/idea/manifest.json" />
+</head>
+<body>
+<header>
+    <h1><a title="Students page">CMS</a></h1>
+    <div class="right-header">
+        <div class="profile" title="Profile">
+            <h2 id="login_btn">Login</h2>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="modal-window" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Login</h2>
+                <button class="close" id="closeLogin">&times;</button>
+            </div>
+            <hr>
+            <form class="modal-form" id="form">
+                <div class="modal-body">
+                    <div class="modal-input">
+                        <label for="username">Username</label>
+                        <div class="input">
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                    </div>
+                    <div class="modal-input">
+                        <label for="password">Password</label>
+                        <div class="input">
+                            <input type="text" id="password" name="password" required>
+                        </div>
+                    </div>
+                </div>
+            <hr>
+            <div class="modal-footer">
+                <input type="submit" value="Cancel" id="cancel">
+                <input type="submit" value="Confirm" id="confirm">
+            </div>
+            </form>
+        </div>
+    </div>
+</main>
+<script src="login.js"></script>
+</body>
+</html>

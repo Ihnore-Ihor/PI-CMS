@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Internet Programming</title>
+    <link rel="stylesheet" href="Students.css">
+    <link rel="icon" type="image/png" href="assets/isaac.png">
+    <link rel="manifest" href="/PI-CMS/idea/manifest.json" />
+</head>
+<body>
+<header>
+    <div class="burgerMenu">
+        <button id="menuBtn">
+            <img src="assets/Menu.png" alt="Burger menu" id="menu">
+        </button>
+        <nav class="navbar" id="navbarBurger">
+            <ul>
+                <li><a href="Dashboard.html">Dashboard</a></li>
+                <li><a href="Students.html"><b>Students</b></a></li>
+                <li><a href="Tasks.html" >Tasks</a></li>
+            </ul>
+        </nav>
+    </div>
+    <h1><a href="Students.html" title="Students page">CMS</a></h1>
+    <div class="right-header">
+        <div class="notification">
+            <a href="Messages.html">
+                <img id="bell" src="assets/bell.png" alt="Bell">
+                <img id="notification-status" src="assets/notification.png" alt="notification status">
+            </a>
+            <div class="dropdownNotification">
+                <div class="message" id="human1">
+                    <div class="humanProfile">
+                        <img src="assets/Amethyst.png" alt="profile">
+                        <p>Amethyst</p>
+                    </div>
+                    <div class="humanMessage">
+                        <p>Hi guys</p>
+                    </div>
+                </div>
+                <div class="message" id="human2">
+                    <div class="humanProfile">
+                        <img src="assets/Garnet.png" alt="profile">
+                        <p>Garnet</p>
+                    </div>
+                    <div class="humanMessage">
+                        <p>Hello</p>
+                    </div>
+                </div>
+                <div class="message" id="human3">
+                    <div class="humanProfile">
+                        <img src="assets/Pearl.png" alt="profile">
+                        <p>Pearl</p>
+                    </div>
+                    <div class="humanMessage">
+                        <p>Hi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="profile" title="Profile">
+            <div class="account-container">
+                <img src="assets/user.png" alt="user" width="32" height="32">
+                <h2 id="profileName">Ihor Braichenko</h2>
+            </div>
+
+            <div class="dropdown">
+                <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Profile</a>
+                <a id="logout_btn">Log out</a>
+            </div>
+        </div>
+    </div>
+
+</header>
+
+<aside>
+    <nav class="navbar">
+        <ul>
+            <li><a href="Dashboard.html">Dashboard</a></li>
+            <li><a href="Students.html"><b>Students</b></a></li>
+            <li><a href="Tasks.html" >Tasks</a></li>
+        </ul>
+    </nav>
+</aside>
+
+<main>
+    <div id="students">
+        <h2>Students</h2>
+        <button id="addStudent"><b>+</b></button>
+    </div>
+    <div id="table">
+        <table id="tableStudents">
+            <tr>
+                <th>
+                    <label for="idStudentMain" id="idLabel">id</label>
+                    <input type="checkbox" class="checkbox" id="idStudentMain">
+                </th>
+                <th>Group</th>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Birthday</th>
+                <th>Status</th>
+                <th>Options</th>
+            </tr>
+        </table>
+    </div>
+    <div id="pagination">
+        <button id="previousPage" class="tableStudents_pagination_btn"><b>&laquo;</b></button>
+        <button id="page1" class="tableStudents_pagination_btn"><b>1</b></button>
+        <button id="page2" class="tableStudents_pagination_btn"><b>2</b></button>
+        <button id="page3" class="tableStudents_pagination_btn"><b>3</b></button>
+        <button id="nextPage" class="tableStudents_pagination_btn"><b>&raquo;</b></button>
+    </div>
+
+    <div class="modal-window" id="addEditStudent">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="newStudentH2">New Student</h2>
+                <input type="submit" value="&times;" class="close" title="close" id="close">
+            </div>
+            <hr>
+            <form class="modal-form" id="form">
+                <div class="modal-body">
+                    <div class="modal-input">
+                        <label for="group">Group</label>
+                        <div class="input">
+                            <select id="group" name="Group" required>
+                                <option value="">Select a group</option>
+                                <option value="PZ-22">PZ-22</option>
+                                <option value="PZ-21">PZ-21</option>
+                                <option value="PZ-23">PZ-23</option>
+                                <option value="PZ-24">PZ-24</option>
+                                <option value="PZ-25">PZ-25</option>
+                                <option value="PZ-26">PZ-26</option>
+                                <option value="PZ-11">PZ-11</option>
+                                <option value="PZ-12">PZ-12</option>
+                                <option value="PZ-13">PZ-13</option>
+                                <option value="PZ-14">PZ-14</option>
+                                <option value="PZ-15">PZ-15</option>
+                                <option value="PZ-16">PZ-16</option>
+                                <option value="PZ-17">PZ-17</option>
+                            </select>
+                            <p class="errorMessage" id="errorMessageGroup">Please select group.</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="firstName">First Name</label>
+                        <div class="input">
+                            <input type="text" id="firstName" name="FirstName" required>
+                            <p class="errorMessage" id="errorMessageFirstName">Please enter valid name (A-z, А-я, 2-50 characters).</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="lastName">Last Name</label>
+                        <div class="input">
+                            <input type="text" id="lastName" name="LastName" required>
+                            <p class="errorMessage" id="errorMessageLastName">Please enter valid name (A-z, А-я, 2-50 characters).</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="gender">Gender</label>
+                        <div class="input">
+                            <select id="gender" name="Gender" required>
+                                <option value="">Select student's gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <p class="errorMessage" id="errorMessageGender">Please select gender.</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-input">
+                        <label for="dateOfBirth">Birthday</label>
+                        <div class="input">
+                            <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                            <p class="errorMessage" id="errorMessageDateOfBirth">Date of birth cannot be in the future.</p>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="modal-footer">
+                   <input type="submit" value="Cancel" id="cancel">
+                   <input type="submit" value="Confirm" id="confirm">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-window" id="deleteStudent">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="deleteStudentH2Warning">WARNING!!!</h2>
+                <button class="close" id="closeDelete">&times;</button>
+            </div>
+            <hr>
+            <div class="modal-body">
+                <p id="warningMessage">Are you sure you want to delete this student?</p>
+            </div>
+            <hr>
+            <div class="modal-footer">
+                <button class="cancel" id="cancelDelete">Cancel</button>
+                <button class="confirm" id="delete">Delete</button>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="Students.js"></script>
+<script src="/PI-CMS/idea/init_sw.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>
