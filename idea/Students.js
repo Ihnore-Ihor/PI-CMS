@@ -327,18 +327,27 @@ document.addEventListener("DOMContentLoaded", () => {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                    }).then(response => {
+                    }).then(async response => {
                         if (response.status === 401) {
                             tokenExpired();
-                            return { success: false };
+                            return { success: false, error: 'Unauthorized' };
                         }
-                        response.json()
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        try {
+                            const result = await response.json();
+                            return result || { success: true };
+                        } catch (jsonError) {
+                            console.warn(`JSON parsing failed for DELETE /students/${id}:`, jsonError);
+                            return { success: true };
+                        }
                     })
                 );
                 const results = await Promise.all(deletePromises);
-                const failed = results.find(result => !result.success);
+                const failed = results.find(result => result && !result.success);
                 if (failed) {
-                    alert(failed.error || 'Failed to delete students');
+                    alert(failed.error || 'Failed to delete one or more students');
                 } else {
                     updateTable();
                     selectedRows = [];
@@ -461,12 +470,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
                 const result = await response.json();
+                console.log('Backend response:', result); // Debug: Log full response
                 if (result.success) {
                     updateTable();
                     document.getElementById("addEditStudent").style.display = "none";
                     studentToEdit = null;
                 } else {
                     if (result.errors) {
+                        console.log('Errors received:', result.errors);
+                        let hasFieldErrors = false;
                         Object.keys(result.errors).forEach((key) => {
                             const inputId = {
                                 group_name: 'group',
@@ -474,13 +486,20 @@ document.addEventListener("DOMContentLoaded", () => {
                                 last_name: 'lastName',
                                 gender: 'gender',
                                 date_of_birth: 'dateOfBirth'
-                            }[key] || key;
-                            const container = document.getElementById(inputId)?.parentElement;
-                            if (container) {
-                                container.classList.add('error');
-                                container.querySelector('.errorMessage').textContent = result.errors[key];
+                            }[key];
+                            if (inputId) {
+                                const container = document.getElementById(inputId)?.parentElement;
+                                if (container) {
+                                    hasFieldErrors = true;
+                                    container.classList.add('error');
+                                    container.querySelector('.errorMessage').textContent = result.errors[key];
+                                }
                             }
                         });
+                        if (!hasFieldErrors) {
+                            const errorMessages = Object.values(result.errors).join('; ');
+                            alert(errorMessages || 'Failed to save student');
+                        }
                     } else {
                         alert(result.error || 'Failed to save student');
                     }
