@@ -5,19 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="544e1b82-2906-4412-942a-26182cbb7488" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/idea/Students.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/idea/auth.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/idea/index.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/idea/login.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/idea/login.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/Dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/Dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/Messages.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/Messages.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/Students.css" beforeDir="false" afterPath="$PROJECT_DIR$/idea/Students.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/idea/Students.js" beforeDir="false" afterPath="$PROJECT_DIR$/idea/Students.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/Tasks.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/Tasks.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/idea/sw.js" beforeDir="false" afterPath="$PROJECT_DIR$/idea/sw.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/idea/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/idea/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/idea/login.js" beforeDir="false" afterPath="$PROJECT_DIR$/idea/login.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -121,7 +112,7 @@
       <workItem from="1744106034684" duration="602000" />
       <workItem from="1745321946306" duration="3474000" />
       <workItem from="1745751910292" duration="32307000" />
-      <workItem from="1746123009673" duration="10771000" />
+      <workItem from="1746123009673" duration="18512000" />
     </task>
     <servers />
   </component>

@@ -47,6 +47,7 @@ async function logoutUser() {
 async function fetchStudents(page) {
     try {
         const token = sessionStorage.getItem("auth_token");
+        console.log(token);
         if (!token) {
             window.location.href = "login.html";
             return { total: 0, perPage: studentsPerPage };

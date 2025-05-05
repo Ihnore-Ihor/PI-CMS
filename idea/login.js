@@ -1,5 +1,4 @@
 const BASE_API_URL = 'http://localhost:8888';
-
 function isUserLoggedIn() {
     const token = sessionStorage.getItem("auth_token");
     return token !== null;
@@ -12,7 +11,7 @@ async function loginUser(username, password) {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ username: username, password }),
+            body: JSON.stringify({ username: username, password: password }),
         });
 
         const data = await response.json();
@@ -31,6 +30,7 @@ async function loginUser(username, password) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("Login loaded");
     // Check if user is already logged in
     if (isUserLoggedIn()) {
         window.location.href = "Students.html";
@@ -65,13 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Form submission handler
     const form = document.getElementById("form");
-    const usernameInput = document.getElementById("username-input");
-    const passwordInput = document.getElementById("password-input");
-
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    console.log("jjjj");
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             if (e.submitter !== document.getElementById("confirm")) return;
+            console.log("Hhh");
 
             const username = usernameInput.value;
             const password = passwordInput.value;
