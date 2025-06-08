@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Internet Programming</title>
-    <link rel="stylesheet" href="Students.css">
-    <link rel="icon" type="image/png" href="assets/isaac.png">
-  <link rel="manifest" href="/PI-CMS/idea/manifest.json" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages - CMS</title>
+  <link rel="stylesheet" href="Students.css"> <!-- Common styles -->
+  <link rel="stylesheet" href="Messages.css"> <!-- Specific styles for Messages -->
+  <link rel="icon" type="image/png" href="assets/isaac.png">
 </head>
 <body>
 <header>
@@ -16,12 +17,13 @@
     <nav class="navbar" id="navbarBurger">
       <ul>
         <li><a href="Dashboard.html">Dashboard</a></li>
-        <li><a href="Students.html"><b>Students</b></a></li>
-        <li><a href="Tasks.html" >Tasks</a></li>
+        <li><a href="Students.html">Students</a></li>
+        <li><a href="Tasks.html">Tasks</a></li>
+        <li><a href="Messages.html"><b>Messages</b></a></li>
       </ul>
     </nav>
   </div>
-  <h1><a href="Students.html" title="Students page">CMS</a></h1>
+  <h1><a href="Dashboard.html" title="Dashboard">CMS</a></h1>
   <div class="right-header">
     <div class="notification">
       <a href="Messages.html">
@@ -29,66 +31,142 @@
         <img id="notification-status" src="assets/notification.png" alt="notification status">
       </a>
       <div class="dropdownNotification">
-        <div class="message" id="human1">
-          <div class="humanProfile">
-            <img src="assets/Amethyst.png" alt="profile">
-            <p>Amethyst</p>
-          </div>
-          <div class="humanMessage">
-            <p>Hi guys</p>
-          </div>
-        </div>
-        <div class="message" id="human2">
-          <div class="humanProfile">
-            <img src="assets/Garnet.png" alt="profile">
-            <p>Garnet</p>
-          </div>
-          <div class="humanMessage">
-            <p>Hello</p>
-          </div>
-        </div>
-        <div class="message" id="human3">
-          <div class="humanProfile">
-            <img src="assets/Pearl.png" alt="profile">
-            <p>Pearl</p>
-          </div>
-          <div class="humanMessage">
-            <p>Hi</p>
-          </div>
-        </div>
+        <!-- Notifications will be populated dynamically -->
       </div>
     </div>
     <div class="profile" title="Profile">
       <div class="account-container">
-        <img src="assets/user.png" alt="user" width="32" height="32">
-        <h2 id="profileName">Ihor Braichenko</h2>
+        <img src="assets/user.png" alt="user" width="32" height="32" id="profileUserImage">
+        <h2 id="profileName"></h2>
       </div>
-
       <div class="dropdown">
         <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Profile</a>
-        <br>
-        <a href="">Log out</a>
+        <a id="logout_btn">Log out</a>
       </div>
     </div>
   </div>
-
 </header>
 
 <aside>
   <nav class="navbar">
     <ul>
       <li><a href="Dashboard.html">Dashboard</a></li>
-      <li><a href="Students.html"><b>Students</b></a></li>
-      <li><a href="Tasks.html" >Tasks</a></li>
+      <li><a href="Students.html">Students</a></li>
+      <li><a href="Tasks.html">Tasks</a></li>
+      <li><a href="Messages.html"><b>Messages</b></a></li>
     </ul>
   </nav>
 </aside>
 
-<main>
-  <div id="students">
-    <h2>Messages</h2>
+<main class="messages-container">
+  <div class="chat-sidebar">
+    <div class="chat-header">
+      <h2>Chats</h2>
+      <button id="createNewChatBtn" title="Create New Chat" disabled>+</button>
+    </div>
+    <div class="chat-list" id="chatList">
+      <!-- Chat list will be populated dynamically -->
+    </div>
+  </div>
+
+  <div class="messages-main-container">
+    <div class="chat-info" id="chatInfo" style="display: none;">
+      <div class="chat-title">
+        <h3 id="currentChatName"></h3>
+        <button id="editChatBtn" title="Edit Chat" style="display: none;">Edit</button>
+      </div>
+      <div class="chat-participants" id="currentChatParticipants">
+        <!-- Participants will be shown here -->
+      </div>
+    </div>
+    <div class="message-list" id="messageList" style="display: none;">
+      <!-- Messages will be populated dynamically -->
+    </div>
+    <div class="chat-welcome-screen" id="chatWelcomeScreen">
+      <div class="welcome-content">
+        <img src="assets/waving-hand.png" alt="Hello" class="welcome-icon">
+        <h2>Select a chat to start messaging</h2>
+        <p>Choose from an existing conversation or start a new one.</p>
+      </div>
+    </div>
+    <div class="message-input-container" id="messageInputContainer" style="display: none;">
+      <input type="text" id="messageInput" placeholder="Type a message..." disabled>
+      <button id="sendMessageBtn" disabled>Send</button>
+    </div>
   </div>
 </main>
+
+<!-- Modal for Creating New Chat -->
+<div class="modal-window" id="newChatModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Create New Chat</h2>
+            <button class="close" id="closeNewChatModal" title="Close">&times;</button>
+        </div>
+        <hr>
+        <form class="modal-form" id="newChatForm">
+            <div class="modal-body">
+                <div class="modal-input">
+                    <label for="chatNameInput">Group Name (Optional)</label>
+                    <div class="input">
+                        <input type="text" id="chatNameInput" name="chatName" placeholder="e.g., Project Alpha Team">
+                    </div>
+                </div>
+                <div class="modal-input">
+                    <label for="userSearchInput">Select Users</label>
+                    <div class="input">
+                        <input type="text" id="userSearchInput" placeholder="Search students..." class="user-search-input-messages">
+                        <div id="userListForNewChat" class="user-selection-list">
+                            <!-- User items will be populated dynamically -->
+                        </div>
+                        <p class="errorMessage" id="errorMessageUsers">Please select at least one user.</p>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="modal-footer">
+                <input type="button" value="Cancel" id="cancelNewChat" class="modal-button-cancel">
+                <input type="submit" value="Create Chat" id="confirmNewChat" class="modal-button-confirm">
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal for Adding User to Chat -->
+<div class="modal-window" id="addUserModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add User to Chat</h2>
+            <button class="close" id="closeAddUserModal" title="Close">&times;</button>
+        </div>
+        <hr>
+        <form class="modal-form" id="addUserForm">
+            <div class="modal-body">
+                <div class="modal-input">
+                    <label for="userSearchInputForAdd">Select Users</label>
+                    <div class="input">
+                        <input type="text" id="userSearchInputForAdd" placeholder="Search students..." class="user-search-input-messages">
+                        <div id="userListForAddUser" class="user-selection-list">
+                            <!-- User items will be populated dynamically -->
+                        </div>
+                        <p class="errorMessage" id="errorMessageUsersToAdd">Please select at least one user.</p>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="modal-footer">
+                <input type="button" value="Cancel" id="cancelAddUser" class="modal-button-cancel">
+                <input type="submit" value="Add User(s)" id="confirmAddUser" class="modal-button-confirm">
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<script src="http://localhost:3000/socket.io/socket.io.js"></script>
 <script src="Messages.js"></script>
 </body>
 </html>
