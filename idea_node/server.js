@@ -72,7 +72,23 @@ io.on('connection', (socket) => {
                 return socket.emit('authentication_error', 'Invalid authentication data: token missing');
             }
 
-            const decoded = jwt.verify(auth.token, JWT_SECRET);
+            let decoded;
+            try {
+                decoded = jwt.verify(auth.token, JWT_SECRET);
+            } catch (jwtError) {
+                // Update user status to offline if token is expired
+                if (jwtError.name === 'TokenExpiredError' && auth.userInfo && auth.userInfo.id) {
+                    await User.findOneAndUpdate(
+                        { mysql_user_id: auth.userInfo.id.toString() },
+                        { 
+                            online: false,
+                            lastSeen: new Date()
+                        }
+                    );
+                }
+                return socket.emit('authentication_error', jwtError.message);
+            }
+
             const mysqlId = decoded.sub;
 
             if (!mysqlId) {
@@ -90,7 +106,9 @@ io.on('connection', (socket) => {
                         last_name: last_name || 'User',
                         avatar: avatar || 'assets/user.png',
                         mysql_user_id: mysqlId.toString(),
-                        socketId: socket.id
+                        socketId: socket.id,
+                        online: true,
+                        lastSeen: new Date()
                     }
                 },
                 { new: true, upsert: true }
@@ -102,6 +120,14 @@ io.on('connection', (socket) => {
             currentUserMysqlId = mysqlId;
 
             socket.join(user._id.toString());
+
+            // Broadcast user's online status to all connected clients
+            socket.broadcast.emit('userStatusChanged', {
+                userId: user._id,
+                mysqlId: user.mysql_user_id,
+                online: true,
+                lastSeen: user.lastSeen
+            });
 
             socket.emit('authenticated', {
                 userId: user._id,
@@ -457,17 +483,26 @@ io.on('connection', (socket) => {
     socket.on('disconnect', async () => {
         if (currentUserId) {
             try {
+                // Update user status in MongoDB
                 const user = await User.findByIdAndUpdate(currentUserId, {
                     online: false,
-                    lastSeen: new Date()
-                });
+                    lastSeen: new Date(),
+                    socketId: null // Clear the socket ID
+                }, { new: true });
 
                 if (user) {
+                    // Broadcast status change to all connected clients
                     socket.broadcast.emit('userStatusChanged', {
                         userId: user._id,
                         mysqlId: user.mysql_user_id,
                         online: false,
                         lastSeen: new Date()
+                    });
+
+                    // Leave all rooms
+                    const rooms = [...socket.rooms];
+                    rooms.forEach(room => {
+                        socket.leave(room);
                     });
                 }
             } catch (error) {

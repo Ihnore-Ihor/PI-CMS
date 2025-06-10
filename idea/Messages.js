@@ -56,6 +56,10 @@ function initializeChat() {
     
     try {
         currentUser = JSON.parse(storedUser);
+        // Ensure the user object has all required fields
+        if (!currentUser.id && currentUser.mysql_user_id) {
+            currentUser.id = currentUser.mysql_user_id;
+        }
         console.log("Found user and token in sessionStorage. User:", currentUser);
         
         // Update the UI with user info
@@ -414,6 +418,11 @@ function setupSocketEvents() {
         currentUserMysqlId = data.mysqlId;
         isAuthenticated = true;
 
+        // Update currentUser with the MySQL ID if not already set
+        if (!currentUser.id) {
+            currentUser.id = data.mysqlId;
+        }
+
         console.log('Updated current user:', {
             currentUser,
             currentUserId,
@@ -443,11 +452,56 @@ function setupSocketEvents() {
         lastChatUpdate = 0; // Reset last chat update time
     });
 
+    socket.on('chatCreatedSuccessfully', (newChat) => {
+        console.log('Chat created successfully:', newChat);
+        // Store the new chat in our local cache
+        fetchedChatsData.set(newChat._id, newChat);
+        // Get all current chats and add the new one
+        const chats = Array.from(fetchedChatsData.values());
+        // Update the chat list with the new chat included
+        updateChatList(chats);
+        // Automatically select the new chat
+        selectChat(newChat._id);
+        // Close the new chat modal
+        const newChatModal = document.getElementById('newChatModal');
+        if (newChatModal) {
+            newChatModal.style.display = 'none';
+            const newChatForm = document.getElementById('newChatForm');
+            if (newChatForm) newChatForm.reset();
+        }
+    });
+
+    socket.on('newChatCreated', (newChat) => {
+        console.log('Added to new chat:', newChat);
+        // Store the new chat in our local cache
+        fetchedChatsData.set(newChat._id, newChat);
+        // Get all current chats and add the new one
+        const chats = Array.from(fetchedChatsData.values());
+        // Update the chat list with the new chat included
+        updateChatList(chats);
+    });
+
     socket.on('authentication_error', (error) => {
         console.error('Chat authentication failed:', error);
         isAuthenticated = false;
         lastChatUpdate = 0;
         disableChatFunctionality(`Authentication failed: ${error}. Please re-login.`);
+        
+        // If token expired, clear session and redirect
+        if (error.includes('jwt expired') || error.includes('invalid token')) {
+            sessionStorage.removeItem("auth_token");
+            sessionStorage.removeItem("user");
+            // Update status to offline before redirecting
+            fetch('http://localhost:8888/students/update-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: false })
+            }).finally(() => {
+                window.location.href = "login.html";
+            });
+        }
     });
 
     socket.on('newMessage', (message) => {
