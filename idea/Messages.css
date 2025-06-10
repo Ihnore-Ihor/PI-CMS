@@ -635,13 +635,24 @@
 }
 
 #notification-status {
+    position: absolute;
+    top: -5px;
+    right: -5px;
     width: 10px;
     height: 10px;
-    position: absolute;
-    top: -15px;
-    left: -12px;
-    opacity: 0;
-    transition: opacity 1s ease-in-out;
-    background-color: #dc3545;
-    border-radius: 50%;
+    opacity: 0 !important; /* Hide by default */
+    transition: opacity 0.3s ease;
+}
+
+/* Only show notification dot when explicitly set */
+#notification-status.show {
+    opacity: 100% !important;
+}
+
+.notification-item.unread {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.notification-item.read {
+    background-color: transparent;
 }

@@ -26,6 +26,12 @@ let chatUpdateTimeout = null; // For debouncing
 
 // Initialize chat when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
+    // Hide notification dot on initial load
+    const notificationStatus = document.getElementById('notification-status');
+    if (notificationStatus) {
+        notificationStatus.classList.remove('show');
+    }
+
     // Initialize chat
     initializeChat();
 
@@ -55,6 +61,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 100);
         // Clear the interval after 5 seconds if chat is not found
         setTimeout(() => clearInterval(checkChatsLoaded), 5000);
+    }
+
+    // Set up notification handling
+    const notification = document.querySelector('.notification');
+    const dropdownNotification = document.querySelector('.dropdownNotification');
+
+    if (notification && notificationStatus && dropdownNotification) {
+        // Clear any existing notifications on page load
+        dropdownNotification.innerHTML = '';
+
+        notification.addEventListener('mouseenter', () => {
+            // Hide the red dot when viewing notifications
+            notificationStatus.classList.remove('show');
+            dropdownNotification.style.display = 'block';
+            
+            // Mark all current notifications as read
+            const notifications = dropdownNotification.querySelectorAll('.notification-item');
+            notifications.forEach(notif => {
+                notif.classList.add('read');
+            });
+        });
+
+        notification.addEventListener('mouseleave', () => {
+            dropdownNotification.style.display = 'none';
+            // Don't show the red dot after viewing notifications
+            // It will only show again when new messages arrive
+        });
     }
 });
 
@@ -845,27 +878,21 @@ function displayChatParticipants(participants) {
 
 // Function to show message notification
 function showMessageNotification(message) {
-    // Trigger bell animation only if we're not in the correct chat
-    const shouldAnimate = !window.location.pathname.endsWith('Messages.html') || 
-                         (window.location.pathname.endsWith('Messages.html') && currentChatId !== message.chatId);
+    // Show notification dot and animate bell for new messages
+    const notificationStatus = document.getElementById('notification-status');
+    const bell = document.getElementById('bell');
     
-    if (shouldAnimate) {
-        // Animate the bell
-        const bell = document.getElementById('bell');
-        if (bell) {
-            // Remove any existing animation
-            bell.style.animation = 'none';
-            // Trigger reflow
-            bell.offsetHeight;
-            // Start new animation
-            bell.style.animation = 'skew 3s 1';
-        }
-
-        // Show notification dot
-        const notificationStatus = document.getElementById('notification-status');
-        if (notificationStatus) {
-            notificationStatus.style.opacity = '100%';
-        }
+    if (notificationStatus) {
+        notificationStatus.classList.add('show');
+    }
+    
+    if (bell) {
+        // Remove any existing animation
+        bell.style.animation = 'none';
+        // Trigger reflow
+        bell.offsetHeight;
+        // Start new animation
+        bell.style.animation = 'skew 3s 1';
     }
 
     // Update dropdown notification if exists
@@ -878,9 +905,9 @@ function showMessageNotification(message) {
         }
 
         const notificationElement = document.createElement('div');
-        notificationElement.className = 'message notification-item';
+        notificationElement.className = 'message notification-item unread';  // Add unread class
         notificationElement.dataset.chatId = message.chatId;
-        notificationElement.dataset.messageId = message._id; // Add message ID for duplicate checking
+        notificationElement.dataset.messageId = message._id;
         notificationElement.innerHTML = `
             <div class="humanProfile">
                 <img src="${message.senderId.avatar || 'assets/user.png'}" alt="profile">
@@ -899,6 +926,19 @@ function showMessageNotification(message) {
                 selectChat(message.chatId);
                 // Hide the notification dropdown
                 dropdownNotification.style.display = 'none';
+                // Mark this notification as read
+                notificationElement.classList.remove('unread');
+                notificationElement.classList.add('read');
+                
+                // Check if all notifications are read
+                const unreadNotifications = dropdownNotification.querySelectorAll('.notification-item.unread');
+                if (unreadNotifications.length === 0) {
+                    // If no unread notifications, hide the red dot
+                    const notificationStatus = document.getElementById('notification-status');
+                    if (notificationStatus) {
+                        notificationStatus.classList.remove('show');
+                    }
+                }
             } else {
                 // If on another page, store the chat ID and redirect
                 sessionStorage.setItem('pending_chat_id', message.chatId);
@@ -991,15 +1031,3 @@ function loadChats() {
     }
     // If not authenticated, the authenticated event handler will request chats
 }
-
-// Add event listener to hide notification dot when dropdown is shown
-document.addEventListener('DOMContentLoaded', () => {
-    const notification = document.querySelector('.notification');
-    const notificationStatus = document.getElementById('notification-status');
-    
-    if (notification && notificationStatus) {
-        notification.addEventListener('mouseenter', () => {
-            notificationStatus.style.opacity = '0';
-        });
-    }
-});
