@@ -17,6 +17,17 @@ const validationPatterns = {
     date: /^\d{4}-\d{2}-\d{2}$/,
 };
 
+const JWT_TOKEN_KEY = "auth_token";
+const SOCKET_SERVER = "http://localhost:3000";
+
+// Initialize socket with auto-connect disabled
+const socket = io(SOCKET_SERVER, {
+    autoConnect: false,
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000
+});
+
 function tokenExpired() {
     sessionStorage.removeItem("auth_token");
     sessionStorage.removeItem("user");
@@ -234,155 +245,168 @@ function clearErrors() {
     });
 }
 
-function initializePresenceSocket() {
-    const token = sessionStorage.getItem("auth_token");
-    if (token) {
-        const socket = io("http://localhost:3000", {
-            auth: { token },
-            autoConnect: true
+// *** START: NOTIFICATION AND SOCKET LOGIC ***
+
+/**
+ * Displays a new message notification in the header dropdown.
+ * @param {object} message - The message object received from the server.
+ */
+function showMessageNotification(message) {
+    // Get UI elements for notification
+    const notificationStatus = document.getElementById('notification-status');
+    const bell = document.getElementById('bell');
+    
+    // Make the red notification dot visible by adding the 'show' class
+    if (notificationStatus) {
+        notificationStatus.classList.add('show');
+    }
+    
+    // Animate the bell icon to draw user's attention
+    if (bell) {
+        bell.style.animation = 'none'; // Reset animation
+        bell.offsetHeight; // Trigger reflow
+        bell.style.animation = 'skew 3s 1'; // Start new animation
+    }
+
+    // Find the dropdown container to add the new notification
+    const dropdownNotification = document.querySelector('.dropdownNotification');
+    if (dropdownNotification) {
+        // Prevent duplicate notifications
+        if (dropdownNotification.querySelector(`[data-message-id="${message._id}"]`)) {
+            return;
+        }
+
+        // Create the new notification element
+        const notificationElement = document.createElement('div');
+        notificationElement.className = 'message notification-item unread';
+        notificationElement.dataset.chatId = message.chatId;
+        notificationElement.dataset.messageId = message._id;
+        
+        // Populate the element with sender's info and message content
+        notificationElement.innerHTML = `
+            <div class="humanProfile">
+                <img src="${message.senderId.avatar || 'assets/user.png'}" alt="profile">
+                <p>${message.senderId.first_name} ${message.senderId.last_name}</p>
+            </div>
+            <div class="humanMessage">
+                <p>${message.content}</p>
+                <span class="message-timestamp">${new Date(message.timestamp).toLocaleTimeString()}</span>
+            </div>
+        `;
+        
+        // Add a click handler to navigate to the correct chat
+        notificationElement.addEventListener('click', () => {
+            sessionStorage.setItem('pending_chat_id', message.chatId);
+            window.location.href = 'Messages.html';
         });
-        socket.on('connect', () => {
-            console.log('User presence announced from Students page.');
-        });
+        
+        // Add the new notification to the top of the list
+        dropdownNotification.insertBefore(notificationElement, dropdownNotification.firstChild);
+
+        // Limit the number of notifications shown
+        const notifications = dropdownNotification.querySelectorAll('.notification-item');
+        if (notifications.length > 10) {
+            notifications[notifications.length - 1].remove();
+        }
     }
 }
 
-function updateStudentStatusInTable(mysqlUserId, online) {
-    const rows = document.querySelectorAll(`tr.Students`);
-    rows.forEach(row => {
-        const idElement = row.querySelector("td:first-child .idStudent");
-        if (idElement && idElement.textContent === mysqlUserId.toString()) {
-            const statusImg = row.querySelector("td:nth-child(6) img");
-            if (statusImg) {
-                statusImg.className = online ? 'status-on' : 'status-off';
-                statusImg.src = `assets/${online ? 'status_on.png' : 'status_off.png'}`;
-            }
-        }
-    });
-}
-
-function initializeSocketForStudents() {
-    const token = sessionStorage.getItem("auth_token");
-    if (!token) return;
-
-    const socket = io("http://localhost:3000", {
-        auth: { token }
-    });
-
+/**
+ * Sets up all socket event listeners for real-time communication.
+ */
+function setupSocketEvents() {
     socket.on('connect', () => {
-        console.log('Socket connected for student status updates. Requesting all statuses.');
-        socket.emit('getAllUserStatuses');
-    });
-
-    socket.on('allUserStatuses', (users) => {
-        if (Array.isArray(users)) {
-            const statusMap = new Map(users.map(u => [u.mysql_user_id, u.online]));
-            const allRows = document.querySelectorAll('tr.Students');
-            allRows.forEach(row => {
-                const id = row.querySelector(".idStudent").textContent;
-                const isOnline = statusMap.get(id) || false;
-                const statusImg = row.querySelector("td:nth-child(6) img");
-                if (statusImg) {
-                    statusImg.className = isOnline ? 'status-on' : 'status-off';
-                    statusImg.src = `assets/${isOnline ? 'status_on.png' : 'status_off.png'}`;
-                }
-            });
+        console.log('Socket connected on Students page:', socket.id);
+        // **CRITICAL FIX**: Manually emit the 'authenticate' event because the
+        // server is designed to listen for this specific event.
+        if (socket.auth) {
+            console.log('Attempting to authenticate from Students page...');
+            socket.emit('authenticate', socket.auth);
         }
     });
 
-    socket.on('userStatusChanged', ({ mysqlUserId, online }) => {
-        updateStudentStatusInTable(mysqlUserId, online);
+    socket.on('authenticated', (data) => {
+        console.log('Authentication successful on Students page:', data);
     });
-    
-    socket.on('connect_error', (err) => {
-        console.error("Socket connection error on students page:", err.message);
+
+    socket.on('authentication_error', (error) => {
+        console.error('Chat authentication failed on Students page:', error);
+        if (error.includes('jwt expired') || error.includes('invalid token')) {
+            tokenExpired();
+        }
+    });
+
+    socket.on('notification', (data) => {
+        console.log('Received notification on Students page:', data);
+        showMessageNotification(data.message);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error on Students page:', error);
     });
 }
 
-// Function to handle page unload (tab close or refresh)
-function handlePageUnload(event) {
-    const token = sessionStorage.getItem("auth_token");
-    if (!token) return;
-
-    // Use sendBeacon for more reliable delivery during page unload
-    navigator.sendBeacon(`${BASE_API_URL}/auth/logout`, JSON.stringify({
-        token: token
-    }));
-    
-    // Clear session storage
-    sessionStorage.removeItem("auth_token");
-    sessionStorage.removeItem("user");
-}
+// *** END: NOTIFICATION AND SOCKET LOGIC ***
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Set up user display and logout
+    // Declare notification elements ONCE here to be used by all related functions.
+    const notification = document.querySelector('.notification');
+    const notificationStatus = document.getElementById('notification-status');
+    const dropdownNotification = document.querySelector('.dropdownNotification');
+    
+    // Setup user display and authentication
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user) {
         const profileUsername = document.getElementById("profileName");
-        if (profileUsername) {
-            profileUsername.textContent = `${user.first_name} ${user.last_name}`;
-        } else {
-            console.warn("Element with ID 'profileName' not found in DOM");
+        if (profileUsername) profileUsername.textContent = `${user.first_name} ${user.last_name}`;
+        const jwtToken = sessionStorage.getItem(JWT_TOKEN_KEY);
+        if (jwtToken) {
+            socket.auth = {
+                token: jwtToken,
+                userInfo: { id: user.id || user.mysql_user_id, first_name: user.first_name, last_name: user.last_name, avatar: user.avatar || 'assets/profile-chat.png' }
+            };
+            socket.connect();
+            setupSocketEvents();
         }
     } else {
         window.location.href = "login.html";
     }
 
-    // Set up logout button
     const logoutBtn = document.getElementById("logout_btn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", logoutUser);
-    } else {
-        console.warn("Element with ID 'logout_btn' not found in DOM");
-    }
+    if (logoutBtn) logoutBtn.addEventListener("click", logoutUser);
 
-    // Notification animation
-    const bell = document.getElementById("bell");
-    if (bell) bell.style.animation = "skew 3s 1";
-    setTimeout(() => {
-        const notificationStatus = document.getElementById("notification-status");
-        if (notificationStatus) notificationStatus.style.opacity = "100%";
-    }, 900);
-
-    // Burger menu toggle
     const menuBtn = document.getElementById("menuBtn");
     if (menuBtn) {
         menuBtn.addEventListener("click", () => {
             const menu = document.getElementById("navbarBurger");
-            if (menu) {
-                menu.style.display = menu.style.display === "block" ? "none" : "block";
-            }
+            if (menu) menu.style.display = menu.style.display === "block" ? "none" : "block";
+        });
+    }
+    window.addEventListener("resize", () => {
+        const navbarBurger = document.getElementById("navbarBurger");
+        if (navbarBurger && window.innerWidth > 768) navbarBurger.style.display = "none";
+    });
+
+    if (notification && notificationStatus && dropdownNotification) {
+        dropdownNotification.innerHTML = '';
+
+        notification.addEventListener('mouseenter', () => {
+            // This is correct: hides the dot when hovering
+            notificationStatus.classList.remove('show');
+            dropdownNotification.style.display = 'block';
+            dropdownNotification.querySelectorAll('.notification-item.unread').forEach(notif => {
+                notif.classList.remove('unread');
+                notif.classList.add('read');
+            });
+        });
+
+        notification.addEventListener('mouseleave', () => {
+            dropdownNotification.style.display = 'none';
         });
     }
 
-    // Window resize handler
-    window.addEventListener("resize", () => {
-        const navbarBurger = document.getElementById("navbarBurger");
-        if (navbarBurger && window.innerWidth > 768) {
-            navbarBurger.style.display = "none";
-        }
-    });
-
-    // Check if form inputs exist
-    const groupInput = document.getElementById("group");
-    const firstNameInput = document.getElementById("firstName");
-    const lastNameInput = document.getElementById("lastName");
-    const genderInput = document.getElementById("gender");
-    const birthdayInput = document.getElementById("dateOfBirth");
-
-    const missingInputs = [];
-    if (!groupInput) missingInputs.push("group");
-    if (!firstNameInput) missingInputs.push("firstName");
-    if (!lastNameInput) missingInputs.push("lastName");
-    if (!genderInput) missingInputs.push("gender");
-    if (!birthdayInput) missingInputs.push("dateOfBirth");
-
-    if (missingInputs.length > 0) {
-        console.error(`Missing form inputs: ${missingInputs.join(", ")}. Please check index.html IDs.`);
-        return;
-    }
-
     updateTable();
+
 
     document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
         backdrop.addEventListener("click", (e) => {
@@ -549,14 +573,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
                 const result = await response.json();
-                console.log('Backend response:', result); // Debug: Log full response
                 if (result.success) {
                     updateTable();
                     document.getElementById("addEditStudent").style.display = "none";
                     studentToEdit = null;
                 } else {
                     if (result.errors) {
-                        console.log('Errors received:', result.errors);
                         let hasFieldErrors = false;
                         Object.keys(result.errors).forEach((key) => {
                             const inputId = {
@@ -607,4 +629,4 @@ document.addEventListener("DOMContentLoaded", () => {
             studentToEdit = null;
         });
     }
-});
+}); 

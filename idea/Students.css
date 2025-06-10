@@ -105,67 +105,6 @@ h1 a {
     background-color: #b3b3b3;
 }
 
-.dropdownNotification img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-}
-
-.dropdownNotification {
-    display: none;
-    position: absolute;
-    top: 15px;
-    right: 0;
-    background-color: gray;
-    padding: 8px;
-    width: 240px;
-    z-index: 1000;
-}
-
-.notification:hover .dropdownNotification {
-    display: block;
-}
-
-.message {
-    display: flex;
-    justify-content: space-between;
-    padding: 5px;
-    background-color: #c5c5c5;
-    color: black;
-    margin: 5px;
-    border-radius: 5px;
-    padding-right: 0;
-}
-
-.humanProfile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-left: 5px;
-    margin-right: 5px;
-    width: 30%;
-}
-
-.humanProfile p {
-    margin: 0;
-}
-
-.humanMessage {
-    background-color: #fafafa;
-    color: black;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    width: 60%;
-    margin-right: 5px;
-    border-radius: 5px;
-}
-
-.humanMessage p {
-    margin: 0;
-    padding: 10px;
-}
-
 main {
     margin-left: 15px;
     margin-right: 15px;
@@ -255,6 +194,7 @@ td p {
     margin: 5px;
 }
 
+/* Modal styles */
 .modal-window {
     display: none;
     position: fixed;
@@ -262,6 +202,7 @@ td p {
     left: 0;
     width: 100%;
     height: 100%;
+    z-index: 1050; /* Ensure modals are on top */
 }
 
 .modal-backdrop {
@@ -348,123 +289,155 @@ td p {
     margin-right: 8px;
 }
 
-#cancel {
-    margin-right: 8px;
+#cancel { margin-right: 8px; }
+#cancelDelete { margin-right: 8px; }
+#warningMessage { margin: 8px; }
+#login_btn:hover { cursor: pointer; }
+
+/* ======================================================== */
+/* === STYLES FOR NOTIFICATION DROPDOWN (UPDATED)       === */
+/* ======================================================== */
+
+.dropdownNotification {
+    display: none;
+    position: absolute;
+    /* FIX #2: Moved dropdown higher by reducing the 'top' value */
+    top: 15px; 
+    right: 0;
+    width: 300px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1001; /* Ensure it's above other content but below modals */
+    padding: 8px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-#cancelDelete {
-    margin-right: 8px;
+.notification:hover .dropdownNotification {
+    display: block;
 }
 
-#warningMessage {
-    margin: 8px;
-}
-
-#login_btn:hover {
+.dropdownNotification .message {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    margin: 0;
+    border-radius: 0;
+    background: none;
     cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
 }
 
+.dropdownNotification .message:last-child {
+    border-bottom: none;
+}
+
+.dropdownNotification .message:hover {
+    background-color: #f8f8f8;
+}
+
+.dropdownNotification .humanProfile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.dropdownNotification .humanProfile img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-bottom: 4px;
+}
+
+.dropdownNotification .humanProfile p {
+    font-size: 12px;
+    color: #555;
+    margin: 0;
+    text-align: center;
+    /* FIX #1: Allow name to wrap by removing nowrap and overflow properties */
+    white-space: normal;
+    word-break: break-word;
+}
+
+.dropdownNotification .humanMessage {
+    background-color: transparent;
+    color: black;
+    width: auto;
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+}
+
+.dropdownNotification .humanMessage p {
+    margin: 0 0 4px 0;
+    padding: 0;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.dropdownNotification .message-timestamp {
+    display: block;
+    text-align: right;
+    font-size: 11px;
+    color: #999;
+}
+
+#notification-status.show {
+    opacity: 1 !important;
+}
+
+.notification-item.unread {
+    background-color: #eaf2fa;
+}
+
+.notification-item.read {
+    background-color: transparent;
+}
+
+
+/* --- Responsive Styles --- */
 @media screen and (max-width: 576px) {
-    aside {
-        display: none;
-    }
-
-    #table {
-        width: 100%;
-    }
-
-    #menu {
-        display: block;
-    }
-
-    #profileName {
-        display: none;
-    }
-
-    .modal-input {
-        flex-direction: column;
-    }
-
-    .modal-input input, .modal-input select {
-        width: 100%;
-        margin-bottom: 4px;
-    }
-
-    .input {
-        width: 100%;
-    }
-
+    aside { display: none; }
+    #table { width: 100%; }
+    #menu { display: block; }
+    #profileName { display: none; }
+    .modal-input { flex-direction: column; }
+    .modal-input input, .modal-input select { width: 100%; margin-bottom: 4px; }
+    .input { width: 100%; }
     #navbarBurger {
         position: fixed;
-        top: 80px;
+        top: 60px;
         background-color: lightgray;
-        height: calc(100vh - 80px);
+        height: calc(100vh - 60px);
         width: 100% !important;
     }
-
-    #navbarBurger li {
-        font-size: 18px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .dropdown {
-        top: 30px;
-        right: 0;
-        left: auto;
-        width: 140px;
-    }
-
-    .dropdownNotification {
-        right: 0;
-        left: auto;
-        width: 240px;
-    }
+    #navbarBurger li { font-size: 18px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .dropdown { top: 50px; right: 0; left: auto; width: 140px; }
+    .dropdownNotification { right: 0; left: auto; width: calc(100vw - 40px); max-width: 320px; }
 }
 
 @media (max-width: 768px) {
-    aside {
-        display: none;
-    }
-
-    #table {
-        width: 100%;
-    }
-
-    #menuBtn {
-        display: block;
-    }
-
+    aside { display: none; }
+    #table { width: 100%; }
+    #menuBtn { display: block; }
     #navbarBurger {
         position: fixed;
-        top: 80px;
+        top: 60px;
         background-color: lightgray;
-        height: calc(100vh - 80px);
+        height: calc(100vh - 60px);
         width: 200px;
     }
-
-    #navbarBurger li {
-        font-size: 24px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        padding: 15px;
-    }
-
-    .dropdown {
-        top: 50px;
-        right: 0;
-        left: auto;
-        width: 160px;
-    }
-
-    .dropdownNotification {
-        right: 0;
-        left: auto;
-        width: 240px;
-    }
+    #navbarBurger li { font-size: 24px; display: flex; flex-direction: column; justify-content: flex-start; padding: 15px; }
+    .dropdown { top: 50px; right: 0; left: auto; width: 160px; }
+    .dropdownNotification { right: 0; left: auto; width: 300px; }
 }
 
 @media (max-width: 992px) {
