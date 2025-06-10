@@ -26,6 +26,22 @@ let chatUpdateTimeout = null; // For debouncing
 
 // Initialize chat when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
+    // Cycle through waving hand images
+    const wavingHandImg = document.querySelector('.welcome-content img.welcome-icon');
+    if (wavingHandImg) {
+        // Get the current index from localStorage or start at 0
+        let currentHandIndex = parseInt(localStorage.getItem('wavingHandIndex') || '0');
+        
+        // Increment the index and wrap around if needed
+        currentHandIndex = (currentHandIndex + 1) % 4; // 4 images (0 to 3)
+        
+        // Save the new index
+        localStorage.setItem('wavingHandIndex', currentHandIndex.toString());
+        
+        // Set the appropriate image
+        wavingHandImg.src = `assets/waving-hand${currentHandIndex || ''}.png`;
+    }
+
     // Hide notification dot on initial load
     const notificationStatus = document.getElementById('notification-status');
     if (notificationStatus) {
