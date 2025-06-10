@@ -1,31 +1,49 @@
 const BASE_API_URL = 'http://localhost:8888';
 function isUserLoggedIn() {
-    const token = sessionStorage.getItem("auth_token");
-    return token !== null;
+    const token = sessionStorage.getItem('auth_token');
+    const user = sessionStorage.getItem('user');
+    return token !== null && user !== null;
 }
 
 async function loginUser(username, password) {
     try {
-        const response = await fetch(`${BASE_API_URL}/auth/login`, {
-            method: "POST",
+        const response = await fetch('http://localhost:8888/auth/login', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username: username, password: password }),
+            body: JSON.stringify({ username, password })
         });
 
         const data = await response.json();
+        console.log('Login response:', data);
 
-        if (response.ok) {
-            sessionStorage.setItem("auth_token", data.token);
-            sessionStorage.setItem("user", JSON.stringify(data.user));
-            return { success: true, data };
+        if (data.message === "Login successful" && data.token) {
+            // Store auth token and user data
+            sessionStorage.setItem('auth_token', data.token);
+            sessionStorage.setItem('user', JSON.stringify(data.user));
+
+            // Update user status to online
+            try {
+                await fetch('http://localhost:8888/students/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${data.token}`
+                    },
+                    body: JSON.stringify({ status: true })
+                });
+            } catch (statusError) {
+                console.error('Error updating status:', statusError);
+            }
+
+            return { success: true };
         } else {
-            return { success: false, error: data.message || "Login failed" };
+            return { success: false, error: data.message || 'Login failed' };
         }
     } catch (error) {
-        console.error("Login error:", error);
-        return { success: false, error: "Network error" };
+        console.error('Login error:', error);
+        return { success: false, error: 'Network error occurred' };
     }
 }
 
@@ -34,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Check if user is already logged in
     if (isUserLoggedIn()) {
         window.location.href = "Students.html";
+        return;
     }
 
     // Modal open/close handlers
@@ -67,12 +86,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("form");
     const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
-    console.log("jjjj");
+
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
             if (e.submitter !== document.getElementById("confirm")) return;
-            console.log("Hhh");
 
             const username = usernameInput.value;
             const password = passwordInput.value;

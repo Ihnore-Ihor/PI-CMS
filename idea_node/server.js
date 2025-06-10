@@ -89,8 +89,7 @@ io.on('connection', (socket) => {
                         first_name: first_name || 'Unknown',
                         last_name: last_name || 'User',
                         avatar: avatar || 'assets/user.png',
-                        online: true,
-                        lastSeen: new Date(),
+                        mysql_user_id: mysqlId.toString(),
                         socketId: socket.id
                     }
                 },
@@ -103,13 +102,6 @@ io.on('connection', (socket) => {
             currentUserMysqlId = mysqlId;
 
             socket.join(user._id.toString());
-            
-            // Notify other users that this user is now online
-            socket.broadcast.emit('userStatusChanged', {
-                userId: user._id,
-                mysqlId: mysqlId,
-                online: true
-            });
 
             socket.emit('authenticated', {
                 userId: user._id,
@@ -117,13 +109,22 @@ io.on('connection', (socket) => {
                 username: user.username,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                avatar: user.avatar,
-                online: user.online
+                avatar: user.avatar
             });
 
         } catch (error) {
             console.error('Authentication error:', error);
             socket.emit('authentication_error', error.message);
+        }
+    });
+
+    socket.on('getAllUserStatuses', async () => {
+        try {
+            const users = await User.find({}, 'mysql_user_id online lastSeen _id');
+            socket.emit('allUserStatuses', users);
+        } catch (error) {
+            console.error('Error fetching user statuses:', error);
+            socket.emit('error', { message: 'Failed to fetch user statuses' });
         }
     });
 
@@ -144,7 +145,7 @@ io.on('connection', (socket) => {
             }
 
             const chats = await Chat.find({ participants: currentUserId })
-                .populate('participants', 'username first_name last_name avatar online lastSeen mysql_user_id')
+                .populate('participants', 'username first_name last_name avatar mysql_user_id')
                 .populate({
                     path: 'lastMessage',
                     populate: { path: 'senderId', select: 'username first_name last_name avatar mysql_user_id' }

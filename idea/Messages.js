@@ -1,6 +1,7 @@
 // --- CONSTANTS ---
 const JWT_TOKEN_KEY = "auth_token";
 const SOCKET_SERVER = "http://localhost:3000";
+const DEBOUNCE_DELAY = 100; // ms
 
 // Initialize socket with auto-connect disabled
 const socket = io(SOCKET_SERVER, {
@@ -17,6 +18,11 @@ let currentUserMysqlId = null;
 let currentChatId = null;
 let allUsersForSelection = [];
 let fetchedChatsData = new Map();
+let userStatusCache = new Map(); // Central cache for user statuses
+let studentStatusCache = new Map(); // Cache for student statuses
+let isAuthenticated = false; // Track authentication state
+let lastChatUpdate = 0; // Track last chat update timestamp
+let chatUpdateTimeout = null; // For debouncing
 
 // Initialize chat when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,6 +31,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Set up event listeners
     setupEventListeners();
+
+    // Set up status updates
+    setupStatusUpdates();
+    
+    // Set up socket connection
+    setupSocketEvents();
+    
+    // Load initial chats
+    loadChats();
 });
 
 // Function to initialize chat
@@ -284,46 +299,132 @@ async function handleNewChatSubmission(e) {
     }
 }
 
+// Function to fetch all students and their statuses
+async function fetchAllStudentStatuses() {
+    try {
+        const token = sessionStorage.getItem('auth_token');
+        const response = await fetch('http://localhost:8888/students/all', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Students data:', data);
+
+        if (data.success && Array.isArray(data.students)) {
+            // Update the status cache
+            data.students.forEach(student => {
+                studentStatusCache.set(student.id.toString(), student.status || false);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching student statuses:', error);
+    }
+}
+
+// Function to check user online status from cache
+function checkUserStatus(mysqlUserId) {
+    return Promise.resolve(studentStatusCache.get(mysqlUserId.toString()) || false);
+}
+
+// Function to update all status indicators
+function updateAllStatusIndicators() {
+    const statusIndicators = document.querySelectorAll('.status-indicator');
+    const promises = Array.from(statusIndicators).map(indicator => {
+        const userId = indicator.closest('[data-user-id]')?.dataset.userId;
+        if (userId) {
+            return checkUserStatus(userId).then(isOnline => {
+                console.log('Status update for user', userId, ':', isOnline);
+                indicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+            });
+        }
+        return Promise.resolve();
+    });
+    return Promise.all(promises);
+}
+
+// Debounce function
+function debounce(func, wait) {
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(chatUpdateTimeout);
+            func(...args);
+        };
+        clearTimeout(chatUpdateTimeout);
+        chatUpdateTimeout = setTimeout(later, wait);
+    };
+}
+
+// Function to update chat list
+const updateChatList = debounce((chats) => {
+    const now = Date.now();
+    if (now - lastChatUpdate < DEBOUNCE_DELAY) {
+        console.log('Skipping duplicate chat update');
+        return;
+    }
+    lastChatUpdate = now;
+
+    console.log('Updating chat list:', chats);
+    // Sort chats by last message timestamp
+    chats.sort((a, b) => {
+        const timeA = a.lastMessage?.timestamp || 0;
+        const timeB = b.lastMessage?.timestamp || 0;
+        return timeB - timeA;
+    });
+    
+    // Clear existing chats
+    const chatList = document.getElementById('chatList');
+    if (chatList) {
+        chatList.innerHTML = '';
+    }
+    
+    // Store chats data
+    fetchedChatsData.clear();
+    chats.forEach(chat => {
+        fetchedChatsData.set(chat._id, chat);
+        addChatToList(chat);
+        // Join each chat room
+        socket.emit('joinChat', chat._id);
+    });
+}, DEBOUNCE_DELAY);
+
 // Function to set up socket events
 function setupSocketEvents() {
     socket.on('connect', () => {
         console.log('Socket connected:', socket.id);
-        socket.emit('authenticate', socket.auth);
+        if (!isAuthenticated) {
+            // Send authentication only if not already authenticated
+            socket.emit('authenticate', socket.auth);
+        }
     });
 
     socket.on('authenticated', (data) => {
+        if (isAuthenticated) {
+            console.log('Already authenticated, ignoring duplicate event');
+            return;
+        }
+
         console.log('Successfully authenticated with chat server:', data);
         currentUserId = data.userId;
-        currentUserMysqlId = parseInt(data.mysqlId);
-        
-        // This is the single source of truth for the user's ID.
-        if (currentUser) {
-            currentUser.id = currentUserMysqlId;
-        }
-        
+        currentUserMysqlId = data.mysqlId;
+        isAuthenticated = true;
+
         console.log('Updated current user:', {
             currentUser,
             currentUserId,
             currentUserMysqlId
         });
-        
-        // Enable chat creation now that we are fully authenticated and have the ID.
+
+        // Enable chat creation now that we are authenticated
         const createNewChatBtn = document.getElementById('createNewChatBtn');
         if (createNewChatBtn) {
             createNewChatBtn.disabled = false;
             createNewChatBtn.title = 'Create New Chat';
-        }
-
-        // Update user info if needed
-        if (data.first_name && data.last_name) {
-            const profileNameElement = document.getElementById('profileName');
-            if (profileNameElement) {
-                profileNameElement.textContent = `${data.first_name} ${data.last_name}`;
-            }
-            const profileImageElement = document.getElementById('profileUserImage');
-            if (profileImageElement && data.avatar) {
-                profileImageElement.src = data.avatar;
-            }
         }
 
         // Enable chat functionality
@@ -332,54 +433,21 @@ function setupSocketEvents() {
             chatFunctionalArea.style.display = 'flex';
         }
 
-        // Request user's chats after authentication
+        // Request user's chats after successful authentication
         socket.emit('getMyChats');
     });
 
-    socket.on('myChats', (chats) => {
-        console.log('Received user chats:', chats);
-        if (Array.isArray(chats)) {
-            chats.forEach(chat => {
-                fetchedChatsData.set(chat._id, chat); // Cache the chat data
-                addChatToList(chat);
-                // Join each chat room
-                socket.emit('joinChat', chat._id);
-            });
-        }
+    socket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        isAuthenticated = false; // Reset authentication state on disconnect
+        lastChatUpdate = 0; // Reset last chat update time
     });
 
     socket.on('authentication_error', (error) => {
         console.error('Chat authentication failed:', error);
+        isAuthenticated = false;
+        lastChatUpdate = 0;
         disableChatFunctionality(`Authentication failed: ${error}. Please re-login.`);
-    });
-
-    socket.on('error', (error) => {
-        console.error('Socket error:', error);
-        alert(error.message);
-    });
-
-    socket.on('chatCreatedSuccessfully', (chat) => {
-        console.log('Chat created successfully:', chat);
-        fetchedChatsData.set(chat._id, chat); // Cache the new chat data
-        addChatToList(chat);
-        socket.emit('joinChat', chat._id);
-        selectChat(chat._id); // Automatically select the new chat
-    });
-
-    socket.on('chatAlreadyExists', (existingChat) => {
-        console.log('Chat already exists:', existingChat);
-        fetchedChatsData.set(existingChat._id, existingChat); // Cache the existing chat data
-        addChatToList(existingChat);
-        socket.emit('joinChat', existingChat._id);
-        selectChat(existingChat._id);
-    });
-
-    socket.on('newChatCreated', (chat) => {
-        console.log('Received new chat notification:', chat);
-        fetchedChatsData.set(chat._id, chat); // Cache the new chat data
-        addChatToList(chat);
-        socket.emit('joinChat', chat._id);
-        // Don't auto-select for recipients
     });
 
     socket.on('newMessage', (message) => {
@@ -390,11 +458,25 @@ function setupSocketEvents() {
             // Show notification for messages in other chats
             showMessageNotification(message);
         }
+
+        // Update the chat in the list with new last message
+        const chat = fetchedChatsData.get(message.chatId);
+        if (chat) {
+            chat.lastMessage = message;
+            // Get all current chats and update the list
+            const chats = Array.from(fetchedChatsData.values());
+            updateChatList(chats);
+        }
     });
 
     socket.on('chatMessages', ({ chatId, messages }) => {
         console.log('Received chat messages:', { chatId, messageCount: messages.length });
         displayMessages(chatId, messages);
+    });
+
+    socket.on('myChats', (chats) => {
+        console.log('Received user chats:', chats);
+        updateChatList(chats);
     });
 
     socket.on('notification', (data) => {
@@ -404,40 +486,34 @@ function setupSocketEvents() {
         }
     });
 
-    socket.on('userStatusChanged', ({ userId, online, lastSeen }) => {
-        // Update user status in the main user list for selection
-        const userInList = allUsersForSelection.find(u => u._id === userId);
-        if (userInList) {
-            userInList.online = online;
-        }
-
+    socket.on('userStatusChanged', ({ userId, online }) => {
+        // Update the status cache
+        userStatusCache.set(userId.toString(), online);
+        
         // Update status indicators everywhere in the UI
         document.querySelectorAll(`[data-user-id="${userId}"] .status-indicator`).forEach(indicator => {
             indicator.className = `status-indicator ${online ? 'online' : 'offline'}`;
         });
 
-        // Update participant list for the currently selected chat
-        if (currentChatId) {
-            const chatData = fetchedChatsData.get(currentChatId);
-            const participant = chatData?.participants.find(p => p._id === userId);
+        // Update chat list items
+        fetchedChatsData.forEach((chat, chatId) => {
+            const participant = chat.participants.find(p => p._id.toString() === userId.toString());
             if (participant) {
                 participant.online = online;
-                displayChatParticipants(chatData.participants);
+                addChatToList(chat);
+                if (chatId === currentChatId) {
+                    displayChatParticipants(chat.participants);
+                }
             }
-        }
+        });
     });
 
-    socket.on('chatUpdated', (updatedChat) => {
-        // Update the chat in our local cache
-        fetchedChatsData.set(updatedChat._id, updatedChat);
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+    });
 
-        // Update the chat in the side list
-        addChatToList(updatedChat);
-
-        // If the updated chat is the currently selected one, refresh its view
-        if (currentChatId === updatedChat._id) {
-            selectChat(updatedChat._id);
-        }
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
     });
 }
 
@@ -553,41 +629,56 @@ function filterUsers(searchTerm) {
 
 // Function to add a new chat to the list
 function addChatToList(chat) {
-    const chatList = document.getElementById('chatList');
-    if (!chatList) return;
+    return new Promise((resolve) => {
+        const chatList = document.getElementById('chatList');
+        if (!chatList) {
+            resolve();
+            return;
+        }
 
-    // Check if chat already exists in the list
-    let existingChat = document.querySelector(`[data-chat-id="${chat._id}"]`);
-    
-    // Determine chat name and other properties
-    const otherParticipants = chat.participants.filter(p => p.mysql_user_id !== currentUserMysqlId.toString());
-    const isDirectChat = otherParticipants.length === 1;
-    const chatName = chat.name || (isDirectChat ? `${otherParticipants[0].first_name} ${otherParticipants[0].last_name}` : 'Unnamed Group');
-    const otherParticipant = isDirectChat ? otherParticipants[0] : null;
+        let existingChat = document.querySelector(`[data-chat-id="${chat._id}"]`);
+        
+        const otherParticipants = chat.participants.filter(p => p._id.toString() !== currentUserId.toString());
+        const isDirectChat = !chat.isGroupChat && otherParticipants.length === 1;
+        const otherParticipant = isDirectChat ? otherParticipants[0] : null;
+        
+        // Get online status from cache for direct chats
+        const statusPromise = isDirectChat && otherParticipant 
+            ? checkUserStatus(otherParticipant.mysql_user_id)
+            : Promise.resolve(false);
 
-    const chatItemHTML = `
-        <div class="chat-avatar-container">
-            <img src="${otherParticipant?.avatar || 'assets/group-chat.png'}" alt="${chatName}" class="chat-avatar">
-            ${otherParticipant ? `<span class="status-indicator ${otherParticipant.online ? 'online' : 'offline'}"></span>` : ''}
-        </div>
-        <div class="chat-item-details">
-            <span class="chat-name">${chatName}</span>
-            <span class="chat-last-message">${chat.lastMessage?.content || 'No messages yet'}</span>
-        </div>
-    `;
+        statusPromise.then(isOnline => {
+            console.log('Chat participant status:', {
+                participant: otherParticipant?.mysql_user_id,
+                isOnline
+            });
+            
+            const chatName = chat.name || (otherParticipant ? `${otherParticipant.first_name} ${otherParticipant.last_name}` : 'Unnamed Group');
 
-    if (existingChat) {
-        // Update existing chat
-        existingChat.innerHTML = chatItemHTML;
-    } else {
-        // Create new chat item
-        const chatItem = document.createElement('div');
-        chatItem.className = 'chat-list-item';
-        chatItem.dataset.chatId = chat._id;
-        chatItem.innerHTML = chatItemHTML;
-        chatItem.addEventListener('click', () => selectChat(chat._id));
-        chatList.appendChild(chatItem);
-    }
+            const chatItemHTML = `
+                <div class="chat-avatar-container">
+                    <img src="${otherParticipant?.avatar || 'assets/group-chat.png'}" alt="${chatName}" class="chat-avatar">
+                    ${isDirectChat ? `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-user-id="${otherParticipant.mysql_user_id}"></span>` : ''}
+                </div>
+                <div class="chat-item-details">
+                    <span class="chat-name">${chatName}</span>
+                    ${chat.lastMessage ? `<span class="last-message">${chat.lastMessage.content}</span>` : ''}
+                </div>
+            `;
+
+            if (existingChat) {
+                existingChat.innerHTML = chatItemHTML;
+            } else {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-item';
+                chatItem.dataset.chatId = chat._id;
+                chatItem.innerHTML = chatItemHTML;
+                chatItem.addEventListener('click', () => selectChat(chat._id));
+                chatList.appendChild(chatItem);
+            }
+            resolve();
+        });
+    });
 }
 
 // Function to select and display a chat
@@ -599,7 +690,7 @@ function selectChat(chatId) {
     currentChatId = chatId;
 
     // Toggle active class on chat list
-    document.querySelectorAll('.chat-list-item').forEach(item => {
+    document.querySelectorAll('.chat-item').forEach(item => {
         item.classList.remove('active-chat');
     });
     const selectedChatElement = document.querySelector(`[data-chat-id="${chatId}"]`);
@@ -659,28 +750,27 @@ function displayChatParticipants(participants) {
     const participantsContainer = document.getElementById('currentChatParticipants');
     if (!participantsContainer) return;
 
-    // Filter out the current user for the display list if desired, or handle appropriately.
-    const displayParticipants = participants.filter(p => p._id !== currentUserId);
+    participantsContainer.innerHTML = '<span>Participants: </span>';
+    
+    const promises = participants.map((p, index) => {
+        return checkUserStatus(p.mysql_user_id).then(isOnline => {
+            const participantSpan = document.createElement('span');
+            participantSpan.className = 'participant-item';
+            participantSpan.dataset.userId = p.mysql_user_id;
 
-    participantsContainer.innerHTML = 'Participants: '; // Clear previous
-    displayParticipants.forEach((p, index) => {
-        const participantSpan = document.createElement('span');
-        participantSpan.className = 'participant-item';
-        participantSpan.dataset.userId = p._id;
+            const statusIndicator = `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-user-id="${p.mysql_user_id}"></span>`;
+            const displayName = p._id.toString() === currentUserId.toString() ? 'You' : `${p.first_name} ${p.last_name}`;
 
-        // Add a status indicator for each participant
-        const statusIndicator = `<span class="status-indicator ${p.online ? 'online' : 'offline'}"></span>`;
-
-        participantSpan.innerHTML = `
-            ${statusIndicator}
-            ${p.first_name} ${p.last_name}${index < displayParticipants.length - 1 ? ', ' : ''}
-        `;
-        participantsContainer.appendChild(participantSpan);
+            participantSpan.innerHTML = `${statusIndicator} ${displayName}${index < participants.length - 1 ? ', ' : ''}`;
+            participantsContainer.appendChild(participantSpan);
+        });
     });
 
-    if (displayParticipants.length === 0) {
-        participantsContainer.innerHTML += 'Just you';
-    }
+    return Promise.all(promises).then(() => {
+        if (participants.length === 0) {
+            participantsContainer.innerHTML = '<span>No participants.</span>';
+        }
+    });
 }
 
 // Function to show message notification
@@ -756,4 +846,29 @@ function displayMessages(chatId, messages) {
     messageList.scrollTop = messageList.scrollHeight;
 }
 
-// ... rest of your existing code ...
+// Set up periodic status updates
+function setupStatusUpdates() {
+    // Initial fetch and update
+    fetchAllStudentStatuses()
+        .then(() => updateAllStatusIndicators())
+        .catch(console.error);
+    
+    // Update statuses every 30 seconds
+    setInterval(() => {
+        fetchAllStudentStatuses()
+            .then(() => updateAllStatusIndicators())
+            .catch(console.error);
+    }, 30000);
+}
+
+// Function to load chats
+function loadChats() {
+    if (!socket.connected) {
+        console.log('Socket not connected, attempting to connect...');
+        socket.connect();
+    } else if (isAuthenticated) {
+        // Only request chats if already authenticated
+        socket.emit('getMyChats');
+    }
+    // If not authenticated, the authenticated event handler will request chats
+}

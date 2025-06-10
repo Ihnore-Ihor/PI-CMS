@@ -234,6 +234,86 @@ function clearErrors() {
     });
 }
 
+function initializePresenceSocket() {
+    const token = sessionStorage.getItem("auth_token");
+    if (token) {
+        const socket = io("http://localhost:3000", {
+            auth: { token },
+            autoConnect: true
+        });
+        socket.on('connect', () => {
+            console.log('User presence announced from Students page.');
+        });
+    }
+}
+
+function updateStudentStatusInTable(mysqlUserId, online) {
+    const rows = document.querySelectorAll(`tr.Students`);
+    rows.forEach(row => {
+        const idElement = row.querySelector("td:first-child .idStudent");
+        if (idElement && idElement.textContent === mysqlUserId.toString()) {
+            const statusImg = row.querySelector("td:nth-child(6) img");
+            if (statusImg) {
+                statusImg.className = online ? 'status-on' : 'status-off';
+                statusImg.src = `assets/${online ? 'status_on.png' : 'status_off.png'}`;
+            }
+        }
+    });
+}
+
+function initializeSocketForStudents() {
+    const token = sessionStorage.getItem("auth_token");
+    if (!token) return;
+
+    const socket = io("http://localhost:3000", {
+        auth: { token }
+    });
+
+    socket.on('connect', () => {
+        console.log('Socket connected for student status updates. Requesting all statuses.');
+        socket.emit('getAllUserStatuses');
+    });
+
+    socket.on('allUserStatuses', (users) => {
+        if (Array.isArray(users)) {
+            const statusMap = new Map(users.map(u => [u.mysql_user_id, u.online]));
+            const allRows = document.querySelectorAll('tr.Students');
+            allRows.forEach(row => {
+                const id = row.querySelector(".idStudent").textContent;
+                const isOnline = statusMap.get(id) || false;
+                const statusImg = row.querySelector("td:nth-child(6) img");
+                if (statusImg) {
+                    statusImg.className = isOnline ? 'status-on' : 'status-off';
+                    statusImg.src = `assets/${isOnline ? 'status_on.png' : 'status_off.png'}`;
+                }
+            });
+        }
+    });
+
+    socket.on('userStatusChanged', ({ mysqlUserId, online }) => {
+        updateStudentStatusInTable(mysqlUserId, online);
+    });
+    
+    socket.on('connect_error', (err) => {
+        console.error("Socket connection error on students page:", err.message);
+    });
+}
+
+// Function to handle page unload (tab close or refresh)
+function handlePageUnload(event) {
+    const token = sessionStorage.getItem("auth_token");
+    if (!token) return;
+
+    // Use sendBeacon for more reliable delivery during page unload
+    navigator.sendBeacon(`${BASE_API_URL}/auth/logout`, JSON.stringify({
+        token: token
+    }));
+    
+    // Clear session storage
+    sessionStorage.removeItem("auth_token");
+    sessionStorage.removeItem("user");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     // Set up user display and logout
     const user = JSON.parse(sessionStorage.getItem("user"));
@@ -248,11 +328,10 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "login.html";
     }
 
+    // Set up logout button
     const logoutBtn = document.getElementById("logout_btn");
     if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-            logoutUser();
-        });
+        logoutBtn.addEventListener("click", logoutUser);
     } else {
         console.warn("Element with ID 'logout_btn' not found in DOM");
     }
