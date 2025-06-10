@@ -8,7 +8,7 @@ const studentsPerPage = 5;
 let selectedRows = [];
 let studentToEdit;
 
-let isValid = [false, false, false, false, false]; // For group, firstName, lastName, gender, dateOfBirth
+let isValid = [false, false, false, false, false];
 
 const BASE_API_URL = 'http://localhost:8888';
 
@@ -20,7 +20,6 @@ const validationPatterns = {
 const JWT_TOKEN_KEY = "auth_token";
 const SOCKET_SERVER = "http://localhost:3000";
 
-// Initialize socket with auto-connect disabled
 const socket = io(SOCKET_SERVER, {
     autoConnect: false,
     reconnection: true,
@@ -31,7 +30,7 @@ const socket = io(SOCKET_SERVER, {
 function tokenExpired() {
     sessionStorage.removeItem("auth_token");
     sessionStorage.removeItem("user");
-    window.location.href = "/PI-Labs/auth/login.html";
+    window.location.href = "login.html";
 }
 
 async function logoutUser() {
@@ -58,7 +57,6 @@ async function logoutUser() {
 async function fetchStudents(page) {
     try {
         const token = sessionStorage.getItem("auth_token");
-        console.log(token);
         if (!token) {
             window.location.href = "login.html";
             return { total: 0, perPage: studentsPerPage };
@@ -66,10 +64,7 @@ async function fetchStudents(page) {
 
         const response = await fetch(`${BASE_API_URL}/students/?page=${page}`, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         });
         if (response.status === 401) {
             tokenExpired();
@@ -91,7 +86,6 @@ function displayStudents() {
     table.innerHTML = `
         <tr>
             <th>
-                <label for="idStudentMain" id="idLabel">id</label>
                 <input type="checkbox" class="checkbox" id="idStudentMain">
             </th>
             <th>Group</th>
@@ -245,44 +239,24 @@ function clearErrors() {
     });
 }
 
-// *** START: NOTIFICATION AND SOCKET LOGIC ***
-
-/**
- * Displays a new message notification in the header dropdown.
- * @param {object} message - The message object received from the server.
- */
 function showMessageNotification(message) {
-    // Get UI elements for notification
     const notificationStatus = document.getElementById('notification-status');
     const bell = document.getElementById('bell');
-    
-    // Make the red notification dot visible by adding the 'show' class
     if (notificationStatus) {
         notificationStatus.classList.add('show');
     }
-    
-    // Animate the bell icon to draw user's attention
     if (bell) {
-        bell.style.animation = 'none'; // Reset animation
-        bell.offsetHeight; // Trigger reflow
-        bell.style.animation = 'skew 3s 1'; // Start new animation
+        bell.style.animation = 'none';
+        bell.offsetHeight;
+        bell.style.animation = 'skew 3s 1';
     }
-
-    // Find the dropdown container to add the new notification
     const dropdownNotification = document.querySelector('.dropdownNotification');
     if (dropdownNotification) {
-        // Prevent duplicate notifications
-        if (dropdownNotification.querySelector(`[data-message-id="${message._id}"]`)) {
-            return;
-        }
-
-        // Create the new notification element
+        if (dropdownNotification.querySelector(`[data-message-id="${message._id}"]`)) return;
         const notificationElement = document.createElement('div');
         notificationElement.className = 'message notification-item unread';
         notificationElement.dataset.chatId = message.chatId;
         notificationElement.dataset.messageId = message._id;
-        
-        // Populate the element with sender's info and message content
         notificationElement.innerHTML = `
             <div class="humanProfile">
                 <img src="${message.senderId.avatar || 'assets/user.png'}" alt="profile">
@@ -293,17 +267,11 @@ function showMessageNotification(message) {
                 <span class="message-timestamp">${new Date(message.timestamp).toLocaleTimeString()}</span>
             </div>
         `;
-        
-        // Add a click handler to navigate to the correct chat
         notificationElement.addEventListener('click', () => {
             sessionStorage.setItem('pending_chat_id', message.chatId);
             window.location.href = 'Messages.html';
         });
-        
-        // Add the new notification to the top of the list
         dropdownNotification.insertBefore(notificationElement, dropdownNotification.firstChild);
-
-        // Limit the number of notifications shown
         const notifications = dropdownNotification.querySelectorAll('.notification-item');
         if (notifications.length > 10) {
             notifications[notifications.length - 1].remove();
@@ -311,49 +279,51 @@ function showMessageNotification(message) {
     }
 }
 
-/**
- * Sets up all socket event listeners for real-time communication.
- */
 function setupSocketEvents() {
     socket.on('connect', () => {
         console.log('Socket connected on Students page:', socket.id);
-        // **CRITICAL FIX**: Manually emit the 'authenticate' event because the
-        // server is designed to listen for this specific event.
         if (socket.auth) {
-            console.log('Attempting to authenticate from Students page...');
             socket.emit('authenticate', socket.auth);
         }
     });
-
-    socket.on('authenticated', (data) => {
-        console.log('Authentication successful on Students page:', data);
-    });
-
+    socket.on('authenticated', (data) => console.log('Authentication successful on Students page:', data));
     socket.on('authentication_error', (error) => {
         console.error('Chat authentication failed on Students page:', error);
-        if (error.includes('jwt expired') || error.includes('invalid token')) {
-            tokenExpired();
-        }
+        if (error.includes('jwt expired') || error.includes('invalid token')) tokenExpired();
     });
-
     socket.on('notification', (data) => {
         console.log('Received notification on Students page:', data);
         showMessageNotification(data.message);
     });
-
-    socket.on('connect_error', (error) => {
-        console.error('Socket connection error on Students page:', error);
-    });
+    socket.on('connect_error', (error) => console.error('Socket connection error on Students page:', error));
 }
 
-// *** END: NOTIFICATION AND SOCKET LOGIC ***
-
 document.addEventListener("DOMContentLoaded", () => {
-    // Declare notification elements ONCE here to be used by all related functions.
+    // --- FIX IS HERE: Declare all variables at the top of the scope ---
     const notification = document.querySelector('.notification');
     const notificationStatus = document.getElementById('notification-status');
     const dropdownNotification = document.querySelector('.dropdownNotification');
     
+    // Form and modal inputs
+    const groupInput = document.getElementById("group");
+    const firstNameInput = document.getElementById("firstName");
+    const lastNameInput = document.getElementById("lastName");
+    const genderInput = document.getElementById("gender");
+    const birthdayInput = document.getElementById("dateOfBirth");
+    const form = document.getElementById("form");
+
+    // Check for missing elements early
+    const missingInputs = [];
+    if (!groupInput) missingInputs.push("group");
+    if (!firstNameInput) missingInputs.push("firstName");
+    if (!lastNameInput) missingInputs.push("lastName");
+    if (!genderInput) missingInputs.push("gender");
+    if (!birthdayInput) missingInputs.push("dateOfBirth");
+    if (missingInputs.length > 0) {
+        console.error(`Missing form inputs: ${missingInputs.join(", ")}. Please check HTML IDs.`);
+        return; // Stop execution if essential elements are missing
+    }
+
     // Setup user display and authentication
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user) {
@@ -389,9 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (notification && notificationStatus && dropdownNotification) {
         dropdownNotification.innerHTML = '';
-
         notification.addEventListener('mouseenter', () => {
-            // This is correct: hides the dot when hovering
             notificationStatus.classList.remove('show');
             dropdownNotification.style.display = 'block';
             dropdownNotification.querySelectorAll('.notification-item.unread').forEach(notif => {
@@ -399,14 +367,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 notif.classList.add('read');
             });
         });
-
         notification.addEventListener('mouseleave', () => {
             dropdownNotification.style.display = 'none';
         });
     }
 
     updateTable();
-
 
     document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
         backdrop.addEventListener("click", (e) => {
@@ -426,10 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const deletePromises = ids.map(id =>
                     fetch(`${BASE_API_URL}/students/${id}`, {
                         method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     }).then(async response => {
                         if (response.status === 401) {
                             tokenExpired();
@@ -442,7 +405,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             const result = await response.json();
                             return result || { success: true };
                         } catch (jsonError) {
-                            console.warn(`JSON parsing failed for DELETE /students/${id}:`, jsonError);
                             return { success: true };
                         }
                     })
@@ -481,7 +443,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (addStudentBtn) {
         addStudentBtn.addEventListener("click", () => {
             document.querySelectorAll(".input").forEach((c) => c.classList.remove("error"));
-            const form = document.getElementById("form");
             if (form) form.reset();
             document.getElementById("newStudentH2").textContent = "New Student";
             clearErrors();
@@ -532,7 +493,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const form = document.getElementById("form");
     if (form) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -562,10 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const url = studentToEdit ? `${BASE_API_URL}/students/${studentToEdit.id}` : `${BASE_API_URL}/students/`;
                 const response = await fetch(url, {
                     method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(studentData),
                 });
                 if (response.status === 401) {
@@ -629,4 +586,4 @@ document.addEventListener("DOMContentLoaded", () => {
             studentToEdit = null;
         });
     }
-}); 
+});
