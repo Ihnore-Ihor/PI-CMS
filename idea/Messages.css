@@ -586,6 +586,12 @@
     padding: 8px;
     border-radius: 4px;
     background-color: #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.dropdownNotification .message:hover {
+    background-color: #e9ecef;
 }
 
 .dropdownNotification .humanProfile {
@@ -605,4 +611,37 @@
     padding: 8px;
     background-color: #fff;
     border-radius: 4px;
+}
+
+.dropdownNotification .message-timestamp {
+    display: block;
+    font-size: 0.8em;
+    color: #6c757d;
+    text-align: right;
+    margin-top: 4px;
+}
+
+/* Bell animation */
+@keyframes skew {
+    0% { transform: skew(0deg); }
+    50% { transform: skew(120deg); }
+    100% { transform: skew(240deg); }
+}
+
+#bell {
+    position: absolute;
+    top: -16px;
+    right: 0;
+}
+
+#notification-status {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    top: -15px;
+    left: -12px;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    background-color: #dc3545;
+    border-radius: 50%;
 }

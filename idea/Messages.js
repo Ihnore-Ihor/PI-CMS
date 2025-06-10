@@ -40,6 +40,22 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Load initial chats
     loadChats();
+
+    // Check for pending chat selection
+    const pendingChatId = sessionStorage.getItem('pending_chat_id');
+    if (pendingChatId) {
+        // Remove the pending chat ID
+        sessionStorage.removeItem('pending_chat_id');
+        // Wait for chats to load before selecting
+        const checkChatsLoaded = setInterval(() => {
+            if (fetchedChatsData.has(pendingChatId)) {
+                selectChat(pendingChatId);
+                clearInterval(checkChatsLoaded);
+            }
+        }, 100);
+        // Clear the interval after 5 seconds if chat is not found
+        setTimeout(() => clearInterval(checkChatsLoaded), 5000);
+    }
 });
 
 // Function to initialize chat
@@ -829,16 +845,42 @@ function displayChatParticipants(participants) {
 
 // Function to show message notification
 function showMessageNotification(message) {
-    const notificationStatus = document.getElementById('notification-status');
+    // Trigger bell animation only if we're not in the correct chat
+    const shouldAnimate = !window.location.pathname.endsWith('Messages.html') || 
+                         (window.location.pathname.endsWith('Messages.html') && currentChatId !== message.chatId);
+    
+    if (shouldAnimate) {
+        // Animate the bell
+        const bell = document.getElementById('bell');
+        if (bell) {
+            // Remove any existing animation
+            bell.style.animation = 'none';
+            // Trigger reflow
+            bell.offsetHeight;
+            // Start new animation
+            bell.style.animation = 'skew 3s 1';
+        }
+
+        // Show notification dot
+        const notificationStatus = document.getElementById('notification-status');
         if (notificationStatus) {
-        notificationStatus.style.display = 'block';
+            notificationStatus.style.opacity = '100%';
+        }
     }
 
     // Update dropdown notification if exists
     const dropdownNotification = document.querySelector('.dropdownNotification');
     if (dropdownNotification) {
+        // Check if notification for this message already exists
+        const existingNotification = dropdownNotification.querySelector(`[data-message-id="${message._id}"]`);
+        if (existingNotification) {
+            return; // Skip if notification already exists
+        }
+
         const notificationElement = document.createElement('div');
-        notificationElement.className = 'message';
+        notificationElement.className = 'message notification-item';
+        notificationElement.dataset.chatId = message.chatId;
+        notificationElement.dataset.messageId = message._id; // Add message ID for duplicate checking
         notificationElement.innerHTML = `
             <div class="humanProfile">
                 <img src="${message.senderId.avatar || 'assets/user.png'}" alt="profile">
@@ -846,14 +888,37 @@ function showMessageNotification(message) {
             </div>
             <div class="humanMessage">
                 <p>${message.content}</p>
+                <span class="message-timestamp">${new Date(message.timestamp).toLocaleTimeString()}</span>
             </div>
         `;
+        
+        // Add click handler to navigate to the chat
+        notificationElement.addEventListener('click', () => {
+            if (window.location.pathname.endsWith('Messages.html')) {
+                // If already on Messages page, just switch to the chat
+                selectChat(message.chatId);
+                // Hide the notification dropdown
+                dropdownNotification.style.display = 'none';
+            } else {
+                // If on another page, store the chat ID and redirect
+                sessionStorage.setItem('pending_chat_id', message.chatId);
+                window.location.href = 'Messages.html';
+            }
+        });
         
         // Add at the top
         if (dropdownNotification.firstChild) {
             dropdownNotification.insertBefore(notificationElement, dropdownNotification.firstChild);
         } else {
             dropdownNotification.appendChild(notificationElement);
+        }
+
+        // Limit the number of notifications shown (keep last 10)
+        const notifications = dropdownNotification.querySelectorAll('.notification-item');
+        if (notifications.length > 10) {
+            for (let i = 10; i < notifications.length; i++) {
+                notifications[i].remove();
+            }
         }
     }
 }
@@ -926,3 +991,15 @@ function loadChats() {
     }
     // If not authenticated, the authenticated event handler will request chats
 }
+
+// Add event listener to hide notification dot when dropdown is shown
+document.addEventListener('DOMContentLoaded', () => {
+    const notification = document.querySelector('.notification');
+    const notificationStatus = document.getElementById('notification-status');
+    
+    if (notification && notificationStatus) {
+        notification.addEventListener('mouseenter', () => {
+            notificationStatus.style.opacity = '0';
+        });
+    }
+});
