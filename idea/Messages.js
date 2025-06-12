@@ -248,7 +248,7 @@ function openNewChatModal(isEdit = false, chatData = null) {
 }
 
 // Function to fetch and display users
-async function fetchAndDisplayUsers(participants = []) {
+async function fetchAndDisplayUsers(existingParticipants = []) {
     try {
         const token = sessionStorage.getItem('auth_token');
         console.log('Attempting to fetch users with token:', token);
@@ -276,7 +276,7 @@ async function fetchAndDisplayUsers(participants = []) {
             }
             allUsersForSelection = data.students;
             console.log('Processed users for selection:', allUsersForSelection);
-            updateUserList(data.students);
+            updateUserList(data.students, existingParticipants);
         } else {
             console.error('Invalid response format:', data);
         }
@@ -289,17 +289,23 @@ async function fetchAndDisplayUsers(participants = []) {
 // Function to handle new chat submission
 async function handleNewChatSubmission(e) {
     e.preventDefault();
-    const selectedUsers = Array.from(document.querySelectorAll('#userList input[type="checkbox"]:checked'))
+    const selectedUsers = Array.from(document.querySelectorAll('#userListForNewChat .user-checkbox:checked'))
         .map(checkbox => {
             const userData = allUsersForSelection.find(u => u.id.toString() === checkbox.value);
+            if (!userData) {
+                console.warn(`Could not find user data for ID: ${checkbox.value}`);
+                return null;
+            }
+            const firstName = userData.firstName || userData.first_name;
+            const lastName = userData.lastName || userData.last_name;
             return {
                 id: userData.id,
-                username: `${userData.first_name}_${userData.last_name}`,
-                first_name: userData.first_name,
-                last_name: userData.last_name,
+                username: `${firstName}_${lastName}`,
+                first_name: firstName,
+                last_name: lastName,
                 avatar: userData.avatar
             };
-        });
+        }).filter(Boolean); // Remove nulls from the array
 
     // Add the current user to the participants list automatically
     const currentUserData = {
@@ -491,6 +497,21 @@ function setupSocketEvents() {
             }).finally(() => {
                 window.location.href = "login.html";
             });
+        }
+    });
+
+    socket.on('chatUpdated', (updatedChat) => {
+        console.log('[chatUpdated] Received chat update:', updatedChat);
+
+        // Update the local cache
+        fetchedChatsData.set(updatedChat._id.toString(), updatedChat);
+
+        // Update the chat item in the list
+        upsertChatItem(updatedChat);
+
+        // If the updated chat is the one currently open, refresh its header
+        if (updatedChat._id.toString() === currentChatId) {
+            updateChatHeader(updatedChat);
         }
     });
 
@@ -746,24 +767,61 @@ function sendMessage(content) {
 }
 
 // Function to update user list UI
-function updateUserList(users) {
-    const userList = document.getElementById('userList');
-    if (!userList) return;
+function updateUserList(users, existingParticipants = []) {
+    const userList = document.getElementById('userListForNewChat');
+    if (!userList) {
+        console.error("User list container not found!");
+        return;
+    }
     
     userList.innerHTML = '';
     
-    const sortedUsers = users.sort((a, b) => a.first_name.localeCompare(b.first_name));
+    if (users.length === 0) {
+        userList.innerHTML = '<div class="no-users-found">No users found.</div>';
+        return;
+    }
+    
+    const existingParticipantIds = new Set(existingParticipants.map(p => p.mysql_user_id.toString()));
+
+    const sortedUsers = users.sort((a, b) => ((a.firstName || a.first_name) || '').localeCompare((b.firstName || b.first_name) || ''));
 
     sortedUsers.forEach(user => {
+        // Exclude the current logged-in user from the list
+        if (user.id === currentUser.id) {
+            return;
+        }
+
         const userElement = document.createElement('div');
         userElement.className = 'user-item';
+        userElement.dataset.userId = user.id;
+
+        const firstName = user.firstName || user.first_name || 'Unknown';
+        const lastName = user.lastName || user.last_name || 'User';
+        const groupName = user.groupName || user.group_name || user.group || 'N/A';
+
         userElement.innerHTML = `
-            <input type="checkbox" id="user_${user.id}" value="${user.id}">
-            <label for="user_${user.id}">
-                <img src="${user.avatar || 'assets/user.png'}" alt="user avatar" class="user-avatar-small">
-                <span>${user.first_name} ${user.last_name}</span>
-            </label>
+            <input type="checkbox" id="user_${user.id}" value="${user.id}" class="user-checkbox">
+            <div class="user-info">
+                <img src="${user.avatar || 'assets/user.png'}" alt="user avatar" class="user-avatar">
+                <div class="user-details">
+                    <span class="user-name">${firstName} ${lastName}</span>
+                    <span class="user-group">Group: ${groupName}</span>
+                </div>
+            </div>
         `;
+
+        // Add event listener to the whole item for better UX
+        userElement.addEventListener('click', (e) => {
+            const checkbox = userElement.querySelector('.user-checkbox');
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        });
+
+        if (existingParticipantIds.has(user.id.toString())) {
+            userElement.querySelector('.user-checkbox').checked = true;
+        }
+
         userList.appendChild(userElement);
     });
 }
@@ -934,21 +992,25 @@ function selectChat(chatId) {
         return;
     }
 
-    const otherParticipants = chatData.participants.filter(p => p.mysql_user_id !== currentUserMysqlId.toString());
+    updateChatHeader(chatData);
+}
+
+function updateChatHeader(chatData) {
+    const chatNameElement = document.getElementById('currentChatName');
+    if (!chatNameElement) return;
+
+    const otherParticipants = chatData.participants.filter(p => p._id.toString() !== currentUserId.toString());
     const isDirectChat = !chatData.isGroupChat && otherParticipants.length === 1;
     const chatName = chatData.name || (isDirectChat ? `${otherParticipants[0].first_name} ${otherParticipants[0].last_name}` : 'Unnamed Group');
-    
-    const chatNameElement = document.getElementById('currentChatName');
-    if (chatNameElement) {
-        chatNameElement.textContent = chatName;
-    }
+
+    chatNameElement.textContent = chatName;
 
     displayChatParticipants(chatData.participants);
 
     const editChatBtn = document.getElementById('editChatBtn');
     if (editChatBtn) {
         const amCreator = chatData.createdBy && chatData.createdBy._id === currentUserId;
-        editChatBtn.style.display = amCreator ? 'block' : 'none';
+        editChatBtn.style.display = (chatData.isGroupChat && amCreator) ? 'block' : 'none';
     }
 }
 
