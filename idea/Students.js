@@ -282,20 +282,37 @@ function showMessageNotification(message) {
 function setupSocketEvents() {
     socket.on('connect', () => {
         console.log('Socket connected on Students page:', socket.id);
+        // Authenticate the socket connection to join user-specific rooms
         if (socket.auth) {
+            console.log('Authenticating socket on Students page...');
             socket.emit('authenticate', socket.auth);
         }
     });
-    socket.on('authenticated', (data) => console.log('Authentication successful on Students page:', data));
+
+    socket.on('authenticated', (data) => {
+        console.log('Authentication successful on Students page:', data);
+    });
+
     socket.on('authentication_error', (error) => {
         console.error('Chat authentication failed on Students page:', error);
-        if (error.includes('jwt expired') || error.includes('invalid token')) tokenExpired();
+        if (error.includes('jwt expired') || error.includes('invalid token')) {
+            tokenExpired();
+        }
     });
-    socket.on('notification', (data) => {
-        console.log('Received notification on Students page:', data);
-        showMessageNotification(data.message);
+
+    socket.on('disconnect', () => {
+        console.log('Socket disconnected on Students page');
     });
-    socket.on('connect_error', (error) => console.error('Socket connection error on Students page:', error));
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error on Students page:', error);
+    });
+
+    // Listen for 'newMessage' to show notifications
+    socket.on('newMessage', (message) => {
+        console.log('Received new message on Students page:', message);
+        showMessageNotification(message);
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -335,8 +352,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 token: jwtToken,
                 userInfo: { id: user.id || user.mysql_user_id, first_name: user.first_name, last_name: user.last_name, avatar: user.avatar || 'assets/profile-chat.png' }
             };
-            socket.connect();
+            // Set up listeners before connecting to avoid race conditions
             setupSocketEvents();
+            socket.connect();
         }
     } else {
         window.location.href = "login.html";
