@@ -260,13 +260,11 @@ io.on('connection', (socket) => {
                 { path: 'createdBy', select: 'username first_name last_name avatar mysql_user_id' }
             ]);
             
-            // Notify creator immediately
-            socket.emit('chatCreatedSuccessfully', populatedChat);
-
-            // Notify other participants
+            // Notify all participants about the new chat
             participantDocs.forEach(user => {
-                if (user.socketId && user._id.toString() !== currentUserId.toString()) {
-                    io.to(user.socketId).emit('newChatCreated', populatedChat);
+                if (user.socketId) {
+                    const event = user._id.equals(currentUserId) ? 'chatCreatedSuccessfully' : 'newChatCreated';
+                    io.to(user.socketId).emit(event, populatedChat);
                 }
             });
 
@@ -301,16 +299,61 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('sendMessage', async ({ chatId, content }) => {
+    socket.on('getChatMessages', async (chatId) => {
+        console.log('[getChatMessages] Request received:', {
+            userId: currentUserId,
+            chatId: chatId
+        });
+
         if (!currentUserId) {
-            socket.emit('error', { message: 'Not authenticated' });
-            return;
+            console.log('[getChatMessages] Not authenticated');
+            return socket.emit('error', { message: 'Not authenticated' });
         }
+
+        try {
+            // Validate the user is a participant of the chat they're requesting
+            const chat = await Chat.findOne({ _id: chatId, participants: currentUserId });
+            if (!chat) {
+                console.log('[getChatMessages] Chat not found or user not participant:', {
+                    chatId,
+                    userId: currentUserId
+                });
+                return socket.emit('error', { message: 'Chat not found or you are not a participant.' });
+            }
+
+            const messages = await Message.find({ chatId: chatId })
+                .sort({ timestamp: 'asc' })
+                .populate('senderId', 'username first_name last_name avatar mysql_user_id');
+            
+            console.log('[getChatMessages] Found messages:', {
+                chatId,
+                messageCount: messages.length,
+                timeRange: messages.length > 0 ? {
+                    oldest: messages[0].timestamp,
+                    newest: messages[messages.length - 1].timestamp
+                } : null
+            });
+            
+            socket.emit('chatMessages', { chatId, messages });
+
+        } catch (error) {
+            console.error('[getChatMessages] Error:', error);
+            socket.emit('error', { message: 'Failed to fetch messages.' });
+        }
+    });
+
+    socket.on('sendMessage', async ({ chatId, content }) => {
+        console.log('[sendMessage] New message request:', {
+            chatId,
+            senderId: currentUserId,
+            contentLength: content ? content.length : 0
+        });
 
         try {
             // First get the current user for sender details
             const sender = await User.findById(currentUserId);
             if (!sender) {
+                console.log('[sendMessage] Sender not found:', currentUserId);
                 socket.emit('error', { message: 'Sender not found' });
                 return;
             }
@@ -321,11 +364,19 @@ io.on('connection', (socket) => {
             }).populate('participants');
 
             if (!chat) {
+                console.log('[sendMessage] Chat not found or access denied:', {
+                    chatId,
+                    userId: currentUserId
+                });
                 socket.emit('error', { message: 'Chat not found or access denied' });
                 return;
             }
 
-            console.log('Creating new message in chat:', chatId, 'from user:', currentUserId);
+            console.log('[sendMessage] Creating new message:', {
+                chatId,
+                senderId: currentUserId,
+                senderName: `${sender.first_name}_${sender.last_name}`
+            });
 
             const message = new Message({
                 chatId: chatId,
@@ -336,74 +387,29 @@ io.on('connection', (socket) => {
                 timestamp: new Date()
             });
 
-            console.log('Saving message:', {
-                chatId: message.chatId,
-                senderId: message.senderId,
-                content: message.content
-            });
-
             await message.save();
+            console.log('[sendMessage] Message saved:', message._id);
 
             // Update chat's last message and timestamp
             chat.lastMessage = message._id;
             chat.updatedAt = new Date();
             await chat.save();
+            console.log('[sendMessage] Chat updated with new message');
 
             // Populate the message with sender details
             const populatedMessage = await Message.findById(message._id)
                 .populate('senderId', 'username first_name last_name avatar mysql_user_id');
 
-            console.log('Message saved and populated:', populatedMessage);
-
-            // Send to all participants in the chat room
-            io.to(chatId.toString()).emit('newMessage', {
-                _id: message._id,
-                chatId: message.chatId,
-                senderId: {
-                    _id: sender._id,
-                    username: sender.username,
-                    first_name: sender.first_name,
-                    last_name: sender.last_name,
-                    avatar: sender.avatar,
-                    mysql_user_id: sender.mysql_user_id
-                },
-                senderName: message.senderName,
-                senderAvatar: message.senderAvatar,
-                content: message.content,
-                timestamp: message.timestamp
-            });
-
-            // Send notifications to participants not in the current chat
+            console.log('[sendMessage] Broadcasting message to chat participants');
+            
+            // Emit to all participants
             chat.participants.forEach(participant => {
-                if (!participant._id.equals(currentUserId)) {
-                    io.to(participant._id.toString()).emit('notification', {
-                        message: {
-                            _id: message._id,
-                            chatId: message.chatId,
-                            senderId: {
-                                _id: sender._id,
-                                username: sender.username,
-                                first_name: sender.first_name,
-                                last_name: sender.last_name,
-                                avatar: sender.avatar,
-                                mysql_user_id: sender.mysql_user_id
-                            },
-                            senderName: message.senderName,
-                            senderAvatar: message.senderAvatar,
-                            content: message.content,
-                            timestamp: message.timestamp
-                        },
-                        chatId: chatId,
-                        chatName: chat.name || `${sender.first_name} ${sender.last_name}`
-                    });
-                }
+                io.to(participant._id.toString()).emit('newMessage', populatedMessage);
             });
-
-            console.log('Message and notifications sent successfully');
 
         } catch (error) {
-            console.error('Error sending message:', error);
-            socket.emit('error', { message: 'Failed to send message: ' + error.message });
+            console.error('[sendMessage] Error:', error);
+            socket.emit('error', { message: 'Failed to send message.' });
         }
     });
 
@@ -456,27 +462,27 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('getChatMessages', async (chatId) => {
+    socket.on('getChatDetails', async (chatId) => {
         if (!currentUserId) {
             return socket.emit('error', { message: 'Not authenticated' });
         }
 
         try {
-            // Validate the user is a participant of the chat they're requesting
-            const chat = await Chat.findOne({ _id: chatId, participants: currentUserId });
+            const chat = await Chat.findOne({ _id: chatId, participants: currentUserId })
+                .populate('participants', 'username first_name last_name avatar mysql_user_id')
+                .populate({
+                    path: 'lastMessage',
+                    populate: { path: 'senderId', select: 'username first_name last_name avatar mysql_user_id' }
+                });
+
             if (!chat) {
                 return socket.emit('error', { message: 'Chat not found or you are not a participant.' });
             }
 
-            const messages = await Message.find({ chatId: chatId })
-                .sort({ timestamp: 'asc' })
-                .populate('senderId', 'username first_name last_name avatar mysql_user_id');
-            
-            socket.emit('chatMessages', { chatId, messages });
-
+            socket.emit('chatDetails', chat);
         } catch (error) {
-            console.error(`Error fetching messages for chat ${chatId}:`, error);
-            socket.emit('error', { message: 'Failed to fetch messages.' });
+            console.error(`Error fetching details for chat ${chatId}:`, error);
+            socket.emit('error', { message: 'Failed to fetch chat details.' });
         }
     });
 

@@ -67,7 +67,7 @@
 }
 
 .chat-item.active-chat {
-    background-color: #e3f2fd;
+    background-color: #eef1f6;
 }
 
 .chat-avatar-container {
@@ -76,8 +76,8 @@
 }
 
 .chat-avatar {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
 }
@@ -102,7 +102,9 @@
 
 .chat-item-details {
     flex-grow: 1;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .chat-name {
@@ -114,9 +116,6 @@
 
 .last-message {
     display: block;
-    font-size: 0.9em;
-    color: #666;
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }

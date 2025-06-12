@@ -19,6 +19,8 @@ let currentChatId = null;
 let allUsersForSelection = [];
 let fetchedChatsData = new Map();
 let userStatusCache = new Map(); // Central cache for user statuses
+let messageCache = new Map(); // Cache for messages, keyed by chatId
+let pendingMessages = new Map(); // Pending messages for race condition fix
 let studentStatusCache = new Map(); // Cache for student statuses
 let isAuthenticated = false; // Track authentication state
 let lastChatUpdate = 0; // Track last chat update timestamp
@@ -60,9 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Set up socket connection
     setupSocketEvents();
     
-    // Load initial chats
-    loadChats();
-
     // Check for pending chat selection
     const pendingChatId = sessionStorage.getItem('pending_chat_id');
     if (pendingChatId) {
@@ -170,9 +169,6 @@ function setupEventListeners() {
     
     // Message sending
     setupMessageSending();
-    
-    // Socket events
-    setupSocketEvents();
 }
 
 // Function to set up chat creation
@@ -293,78 +289,62 @@ async function fetchAndDisplayUsers(participants = []) {
 // Function to handle new chat submission
 async function handleNewChatSubmission(e) {
     e.preventDefault();
-    const errorMessage = document.getElementById('errorMessageUsers');
-
-    if (!currentUser || !currentUser.id) {
-        console.error('Current user not properly initialized:', currentUser);
-        if (errorMessage) {
-            errorMessage.style.display = 'block';
-            errorMessage.textContent = 'Error: User not properly initialized. Please try logging in again.';
-        }
-        return;
-    }
-
-    // Get the full user objects for selected participants
-    const selectedUsers = Array.from(document.querySelectorAll('#userListForNewChat .user-checkbox:checked'))
+    const selectedUsers = Array.from(document.querySelectorAll('#userList input[type="checkbox"]:checked'))
         .map(checkbox => {
-            const userItem = checkbox.closest('.user-item');
-            const userId = parseInt(userItem.dataset.userId, 10);
-            return allUsersForSelection.find(u => u.id === userId);
-        })
-        .filter(Boolean); // Filter out any undefined/null results
+            const userData = allUsersForSelection.find(u => u.id.toString() === checkbox.value);
+            return {
+                id: userData.id,
+                username: `${userData.first_name}_${userData.last_name}`,
+                first_name: userData.first_name,
+                last_name: userData.last_name,
+                avatar: userData.avatar
+            };
+        });
 
-    // Find the current user's full object from the master list
-    const currentUserObject = allUsersForSelection.find(u => u.id === parseInt(currentUser.id, 10));
-
-    // Combine and ensure the current user is included
-    let participantsData = [...selectedUsers];
-    if (currentUserObject && !participantsData.some(p => p.id === currentUserObject.id)) {
-        participantsData.push(currentUserObject);
+    // Add the current user to the participants list automatically
+    const currentUserData = {
+        id: currentUser.id,
+        username: `${currentUser.first_name}_${currentUser.last_name}`,
+        first_name: currentUser.first_name,
+        last_name: currentUser.last_name,
+        avatar: currentUser.avatar
+    };
+    if (!selectedUsers.some(u => u.id === currentUserData.id)) {
+        selectedUsers.push(currentUserData);
     }
     
-    // Remove duplicates, just in case
-    participantsData = [...new Map(participantsData.map(item => [item['id'], item])).values()];
-
-    console.log('Final list of participant objects being sent to server:', participantsData);
+    const errorMessage = document.getElementById('errorMessageUsers');
+    if (selectedUsers.length < 2) {
+        if (errorMessage) {
+            errorMessage.textContent = 'Please select at least one other user.';
+            errorMessage.style.display = 'block';
+        }
+        return;
+    } else {
+        if (errorMessage) errorMessage.style.display = 'none';
+    }
 
     const chatName = document.getElementById('chatNameInput').value.trim();
-
-    // Basic validation
-    if (participantsData.length < 2) {
-        if (errorMessage) {
-            errorMessage.style.display = 'block';
-            errorMessage.textContent = 'Please select at least one other user.';
-        }
-        return;
-    }
-    
     const isEditMode = e.target.closest('#newChatModal').dataset.editMode === 'true';
 
     if (isEditMode) {
         const chatId = e.target.closest('#newChatModal').dataset.chatId;
-        // Edit mode still sends MySQL IDs, as the users should already exist.
-        const selectedUserIds = participantsData.map(p => p.id);
         socket.emit('updateChat', {
             chatId: chatId,
             name: chatName,
-            participants: selectedUserIds
+            participants: selectedUsers.map(u => u.id)
         });
     } else {
         // Emit the create chat event with the full participant data
         socket.emit('createNewChat', {
-            participantsData: participantsData,
+            participantsData: selectedUsers,
             groupName: chatName || null
         });
     }
-
-    // Close and reset the modal
+    
     const newChatModal = document.getElementById('newChatModal');
     if (newChatModal) {
         newChatModal.style.display = 'none';
-        e.target.reset();
-        if (errorMessage) {
-            errorMessage.style.display = 'none';
-        }
     }
 }
 
@@ -372,95 +352,45 @@ async function handleNewChatSubmission(e) {
 async function fetchAllStudentStatuses() {
     try {
         const token = sessionStorage.getItem('auth_token');
-        const response = await fetch('http://localhost:8888/students/all', {
+        const response = await fetch('http://localhost:8888/students', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`Failed to fetch student data: ${response.statusText}`);
         }
-
         const data = await response.json();
-        console.log('Students data:', data);
-
-        if (data.success && Array.isArray(data.students)) {
-            // Update the status cache
-            data.students.forEach(student => {
-                studentStatusCache.set(student.id.toString(), student.status || false);
-            });
+        
+        if (data && Array.isArray(data.students)) {
+            const studentStatuses = new Map(data.students.map(s => [s.id.toString(), s.status]));
+            studentStatusCache = studentStatuses;
+        } else {
+            console.error("Unexpected data format from /students endpoint:", data);
         }
+
+        // Update statuses in the UI after fetching
+        updateAllStatusIndicators();
+
     } catch (error) {
-        console.error('Error fetching student statuses:', error);
+        console.error("Error fetching student statuses:", error);
     }
 }
 
-// Function to check user online status from cache
 function checkUserStatus(mysqlUserId) {
-    return Promise.resolve(studentStatusCache.get(mysqlUserId.toString()) || false);
+    if (userStatusCache.has(mysqlUserId.toString())) {
+        return Promise.resolve(userStatusCache.get(mysqlUserId.toString()));
+    }
+    return Promise.resolve(false); // Default to offline if not in cache
 }
 
-// Function to update all status indicators
 function updateAllStatusIndicators() {
-    const statusIndicators = document.querySelectorAll('.status-indicator');
-    const promises = Array.from(statusIndicators).map(indicator => {
-        const userId = indicator.closest('[data-user-id]')?.dataset.userId;
-        if (userId) {
-            return checkUserStatus(userId).then(isOnline => {
-                console.log('Status update for user', userId, ':', isOnline);
-                indicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
-            });
-        }
-        return Promise.resolve();
+    userStatusCache.forEach((isOnline, userId) => {
+        document.querySelectorAll(`[data-user-id="${userId}"] .status-indicator`).forEach(indicator => {
+            indicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+        });
     });
-    return Promise.all(promises);
 }
-
-// Debounce function
-function debounce(func, wait) {
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(chatUpdateTimeout);
-            func(...args);
-        };
-        clearTimeout(chatUpdateTimeout);
-        chatUpdateTimeout = setTimeout(later, wait);
-    };
-}
-
-// Function to update chat list
-const updateChatList = debounce((chats) => {
-    const now = Date.now();
-    if (now - lastChatUpdate < DEBOUNCE_DELAY) {
-        console.log('Skipping duplicate chat update');
-        return;
-    }
-    lastChatUpdate = now;
-
-    console.log('Updating chat list:', chats);
-    // Sort chats by last message timestamp
-    chats.sort((a, b) => {
-        const timeA = a.lastMessage?.timestamp || 0;
-        const timeB = b.lastMessage?.timestamp || 0;
-        return timeB - timeA;
-    });
-    
-    // Clear existing chats
-    const chatList = document.getElementById('chatList');
-    if (chatList) {
-        chatList.innerHTML = '';
-    }
-    
-    // Store chats data
-    fetchedChatsData.clear();
-    chats.forEach(chat => {
-        fetchedChatsData.set(chat._id, chat);
-        addChatToList(chat);
-        // Join each chat room
-        socket.emit('joinChat', chat._id);
-    });
-}, DEBOUNCE_DELAY);
 
 // Function to set up socket events
 function setupSocketEvents() {
@@ -509,25 +439,20 @@ function setupSocketEvents() {
 
         // Request user's chats after successful authentication
         socket.emit('getMyChats');
+        socket.emit('getAllUserStatuses');
     });
 
     socket.on('disconnect', () => {
         console.log('Socket disconnected');
         isAuthenticated = false; // Reset authentication state on disconnect
-        lastChatUpdate = 0; // Reset last chat update time
     });
 
     socket.on('chatCreatedSuccessfully', (newChat) => {
         console.log('Chat created successfully:', newChat);
-        // Store the new chat in our local cache
-        fetchedChatsData.set(newChat._id, newChat);
-        // Get all current chats and add the new one
-        const chats = Array.from(fetchedChatsData.values());
-        // Update the chat list with the new chat included
-        updateChatList(chats);
-        // Automatically select the new chat
-        selectChat(newChat._id);
-        // Close the new chat modal
+        fetchedChatsData.set(newChat._id.toString(), newChat);
+        upsertChatItem(newChat);
+        selectChat(newChat._id.toString());
+
         const newChatModal = document.getElementById('newChatModal');
         if (newChatModal) {
             newChatModal.style.display = 'none';
@@ -538,30 +463,30 @@ function setupSocketEvents() {
 
     socket.on('newChatCreated', (newChat) => {
         console.log('Added to new chat:', newChat);
-        // Store the new chat in our local cache
-        fetchedChatsData.set(newChat._id, newChat);
-        // Get all current chats and add the new one
-        const chats = Array.from(fetchedChatsData.values());
-        // Update the chat list with the new chat included
-        updateChatList(chats);
+        fetchedChatsData.set(newChat._id.toString(), newChat);
+        socket.emit('joinChat', newChat._id);
+        upsertChatItem(newChat);
+    });
+
+    socket.on('chatDetails', (chat) => {
+        fetchedChatsData.set(chat._id.toString(), chat);
+        upsertChatItem(chat); // Use the smart upsert function
+        if (chat._id.toString() === currentChatId) {
+            selectChat(chat._id.toString()); // Re-run selectChat now that data is available
+        }
     });
 
     socket.on('authentication_error', (error) => {
         console.error('Chat authentication failed:', error);
         isAuthenticated = false;
-        lastChatUpdate = 0;
         disableChatFunctionality(`Authentication failed: ${error}. Please re-login.`);
         
-        // If token expired, clear session and redirect
         if (error.includes('jwt expired') || error.includes('invalid token')) {
             sessionStorage.removeItem("auth_token");
             sessionStorage.removeItem("user");
-            // Update status to offline before redirecting
             fetch('http://localhost:8888/students/update-status', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: false })
             }).finally(() => {
                 window.location.href = "login.html";
@@ -569,33 +494,166 @@ function setupSocketEvents() {
         }
     });
 
-    socket.on('newMessage', (message) => {
-        console.log('Received new message:', message);
-        if (message.chatId === currentChatId) {
-            displayMessages(message.chatId, [message]);
-        } else {
-            // Show notification for messages in other chats
-            showMessageNotification(message);
-        }
+    socket.on('chatMessages', ({ chatId, messages }) => {
+        console.log('[chatMessages] Received messages from server:', {
+            chatId,
+            messageCount: messages.length
+        });
 
-        // Update the chat in the list with new last message
-        const chat = fetchedChatsData.get(message.chatId);
-        if (chat) {
-            chat.lastMessage = message;
-            // Get all current chats and update the list
-            const chats = Array.from(fetchedChatsData.values());
-            updateChatList(chats);
-        }
+        const stringChatId = chatId.toString();
+        
+        // Get any pending messages for this chat
+        const pending = pendingMessages.get(stringChatId) || [];
+        console.log('[chatMessages] Found pending messages:', {
+            chatId: stringChatId,
+            pendingCount: pending.length,
+            pendingIds: pending.map(m => m._id)
+        });
+
+        // Create a Set of message IDs from the server
+        const existingIds = new Set(messages.map(m => m._id));
+        console.log('[chatMessages] Server message IDs:', Array.from(existingIds));
+        
+        // Create a merged array with both fetched and pending messages
+        let merged = [...messages];
+        let addedPendingCount = 0;
+
+        // Check timestamps of the last server message and pending messages
+        const lastServerMessageTime = messages.length > 0 ? new Date(messages[messages.length - 1].timestamp).getTime() : 0;
+        
+        // Add pending messages that are newer than the last server message
+        pending.forEach(msg => {
+            const pendingMessageTime = new Date(msg.timestamp).getTime();
+            if (pendingMessageTime > lastServerMessageTime) {
+                console.log('[chatMessages] Adding pending message:', {
+                    messageId: msg._id,
+                    timestamp: msg.timestamp,
+                    content: msg.content
+                });
+                merged.push(msg);
+                addedPendingCount++;
+            } else {
+                console.log('[chatMessages] Skipping older pending message:', {
+                    messageId: msg._id,
+                    timestamp: msg.timestamp
+                });
+            }
+        });
+        
+        console.log('[chatMessages] Merged messages:', {
+            chatId: stringChatId,
+            totalMessages: merged.length,
+            addedFromPending: addedPendingCount,
+            finalMessageCount: merged.length
+        });
+        
+        // Sort all messages by timestamp
+        merged.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Update the cache with merged messages
+        messageCache.set(stringChatId, merged);
+        
+        // Clear pending messages for this chat since we've processed them
+        pendingMessages.delete(stringChatId);
+        
+        // Display the merged messages
+        displayMessages(stringChatId);
     });
 
-    socket.on('chatMessages', ({ chatId, messages }) => {
-        console.log('Received chat messages:', { chatId, messageCount: messages.length });
-        displayMessages(chatId, messages);
+    socket.on('newMessage', (message) => {
+        console.log('[newMessage] Received new message:', {
+            messageId: message._id,
+            chatId: message.chatId,
+            senderId: message.senderId,
+            content: message.content,
+            timestamp: message.timestamp,
+            currentChatId: currentChatId
+        });
+
+        const chatId = message.chatId.toString();
+        const chat = fetchedChatsData.get(chatId);
+        if (!chat) {
+            console.log('[newMessage] Chat not found in fetchedChatsData:', chatId);
+            return;
+        }
+
+        // Update chat's last message and timestamp
+        chat.lastMessage = message;
+        chat.updatedAt = message.timestamp;
+        upsertChatItem(chat);
+        console.log('[newMessage] Updated chat in fetchedChatsData:', {
+            chatId,
+            lastMessage: message._id,
+            updatedAt: message.timestamp
+        });
+
+        if (chatId === currentChatId) {
+            console.log('[newMessage] Message is for current chat, updating cache and display');
+            // If this chat is currently open, add to cache and display
+            if (!messageCache.has(chatId)) {
+                console.log('[newMessage] Initializing message cache for chat:', chatId);
+                messageCache.set(chatId, []);
+            }
+            const currentMessages = messageCache.get(chatId);
+            
+            // Check if message already exists in cache
+            const messageExists = currentMessages.some(m => m._id === message._id);
+            if (!messageExists) {
+                currentMessages.push(message);
+                // Sort messages by timestamp
+                currentMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                console.log('[newMessage] Added new message to cache. Current size:', currentMessages.length);
+                displayMessages(chatId);
+            } else {
+                console.log('[newMessage] Message already exists in cache:', message._id);
+            }
+        } else {
+            console.log('[newMessage] Message is for different chat, queueing in pending');
+            // If chat is not open, queue message for later
+            if (!pendingMessages.has(chatId)) {
+                pendingMessages.set(chatId, []);
+            }
+            const pendingForChat = pendingMessages.get(chatId);
+            // Check if message already exists in pending
+            const messageExists = pendingForChat.some(m => m._id === message._id);
+            if (!messageExists) {
+                pendingForChat.push(message);
+                // Sort pending messages by timestamp
+                pendingForChat.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                console.log('[newMessage] Added to pending. Current size:', pendingForChat.length);
+            } else {
+                console.log('[newMessage] Message already exists in pending:', message._id);
+            }
+            
+            // Show notification for new message
+            showMessageNotification(message);
+        }
     });
 
     socket.on('myChats', (chats) => {
         console.log('Received user chats:', chats);
-        updateChatList(chats);
+        const chatList = document.getElementById('chatList');
+        if (!chatList) return;
+
+        chatList.innerHTML = ''; // Clear the list for a fresh render
+
+        // Sort chats by the most recent activity
+        chats.sort((a, b) => {
+            const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+            const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+            return timeB - timeA;
+        });
+
+        // Populate the list from scratch
+        chats.forEach(chat => {
+            fetchedChatsData.set(chat._id.toString(), chat);
+            const chatItem = document.createElement('div');
+            chatItem.className = 'chat-item';
+            chatItem.dataset.chatId = chat._id.toString();
+            chatItem.innerHTML = generateChatItemHTML(chat);
+            chatItem.addEventListener('click', () => selectChat(chat._id.toString()));
+            chatList.appendChild(chatItem);
+        });
     });
 
     socket.on('notification', (data) => {
@@ -605,30 +663,36 @@ function setupSocketEvents() {
         }
     });
 
-    socket.on('userStatusChanged', ({ userId, online }) => {
-        // Update the status cache
-        userStatusCache.set(userId.toString(), online);
+    socket.on('userStatusChanged', ({ userId, online, lastSeen, mysqlId }) => {
+        const idToUse = mysqlId || userId;
+        userStatusCache.set(idToUse.toString(), online);
         
-        // Update status indicators everywhere in the UI
-        document.querySelectorAll(`[data-user-id="${userId}"] .status-indicator`).forEach(indicator => {
+        document.querySelectorAll(`[data-user-id="${idToUse}"] .status-indicator`).forEach(indicator => {
             indicator.className = `status-indicator ${online ? 'online' : 'offline'}`;
         });
 
-        // Update chat list items
         fetchedChatsData.forEach((chat, chatId) => {
-            const participant = chat.participants.find(p => p._id.toString() === userId.toString());
+            const participant = chat.participants.find(p => p.mysql_user_id.toString() === idToUse.toString());
             if (participant) {
                 participant.online = online;
-                addChatToList(chat);
+                upsertChatItem(chat);
                 if (chatId === currentChatId) {
                     displayChatParticipants(chat.participants);
                 }
             }
         });
     });
+    
+    socket.on('allUserStatuses', (users) => {
+        users.forEach(user => {
+            userStatusCache.set(user.mysql_user_id.toString(), user.online);
+        });
+        updateAllStatusIndicators();
+    });
 
     socket.on('connect_error', (error) => {
         console.error('Socket connection error:', error);
+        disableChatFunctionality('Cannot connect to chat server. Please check your connection and refresh.');
     });
 
     socket.on('error', (error) => {
@@ -650,10 +714,9 @@ function setupMessageSending() {
     const sendMessageBtn = document.getElementById('sendMessageBtn');
 
     if (messageInput && sendMessageBtn) {
-        // Handle message input
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
+                e.preventDefault();
                 if (messageInput.value.trim() && currentChatId) {
                     sendMessage(messageInput.value.trim());
                     messageInput.value = '';
@@ -661,7 +724,6 @@ function setupMessageSending() {
             }
         });
 
-        // Handle send button click
         sendMessageBtn.addEventListener('click', () => {
             if (messageInput.value.trim() && currentChatId) {
                 sendMessage(messageInput.value.trim());
@@ -673,8 +735,10 @@ function setupMessageSending() {
 
 // Function to send a message
 function sendMessage(content) {
-    if (!currentChatId || !content) return;
-    
+    if (!currentChatId) {
+        console.error("Cannot send message, no chat selected.");
+        return;
+    }
     socket.emit('sendMessage', {
         chatId: currentChatId,
         content: content
@@ -683,138 +747,164 @@ function sendMessage(content) {
 
 // Function to update user list UI
 function updateUserList(users) {
-    const userListContainer = document.getElementById('userListForNewChat');
-    if (!userListContainer) return;
-
-    userListContainer.innerHTML = '';
+    const userList = document.getElementById('userList');
+    if (!userList) return;
     
-    // Ensure we have a valid current user ID
-    const currentUserId = currentUser && currentUser.id ? parseInt(currentUser.id) : null;
-    console.log('Updating user list. Current user:', {
-        user: currentUser,
-        parsedId: currentUserId
-    });
-
-    // Filter out current user and create user items
-    const otherUsers = users.filter(user => {
-        const userId = parseInt(user.id);
-        const isCurrentUser = userId === currentUserId;
-        console.log('Comparing user:', {
-            userId,
-            currentUserId,
-            isCurrentUser
-        });
-        return !isCurrentUser;
-    });
+    userList.innerHTML = '';
     
-    console.log('Other users:', otherUsers);
+    const sortedUsers = users.sort((a, b) => a.first_name.localeCompare(b.first_name));
 
-    otherUsers.forEach(user => {
-        const userItem = document.createElement('div');
-        userItem.className = 'user-item';
-        userItem.dataset.userId = user.id.toString(); // Ensure it's a string in the dataset
-
-        userItem.innerHTML = `
-            <input type="checkbox" class="user-checkbox" id="user_${user.id}">
-            <div class="user-info">
-                <img src="${user.avatar || 'assets/user.png'}" alt="${user.first_name} ${user.last_name}" class="user-avatar">
-                <div class="user-details">
-                    <span class="user-name">${user.first_name} ${user.last_name}</span>
-                    <span class="user-group">${user.group_name || ''}</span>
-                </div>
-            </div>
+    sortedUsers.forEach(user => {
+        const userElement = document.createElement('div');
+        userElement.className = 'user-item';
+        userElement.innerHTML = `
+            <input type="checkbox" id="user_${user.id}" value="${user.id}">
+            <label for="user_${user.id}">
+                <img src="${user.avatar || 'assets/user.png'}" alt="user avatar" class="user-avatar-small">
+                <span>${user.first_name} ${user.last_name}</span>
+            </label>
         `;
-
-        userListContainer.appendChild(userItem);
+        userList.appendChild(userElement);
     });
-
-    // Show message if no other users available
-    if (otherUsers.length === 0) {
-        userListContainer.innerHTML = '<div class="no-users-message">No other users available</div>';
-    }
 }
 
 // Function to filter users
 function filterUsers(searchTerm) {
-    const userItems = document.querySelectorAll('.user-item');
-    userItems.forEach(item => {
-        const userName = item.querySelector('.user-name').textContent.toLowerCase();
-        const userGroup = item.querySelector('.user-group').textContent.toLowerCase();
-        const matches = userName.includes(searchTerm.toLowerCase()) || 
-                       userGroup.includes(searchTerm.toLowerCase());
-        item.style.display = matches ? 'flex' : 'none';
+    const term = searchTerm.toLowerCase();
+    const filteredUsers = allUsersForSelection.filter(user =>
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(term)
+    );
+    updateUserList(filteredUsers);
+}
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit'
     });
 }
 
-// Function to add a new chat to the list
-function addChatToList(chat) {
-    return new Promise((resolve) => {
-        const chatList = document.getElementById('chatList');
-        if (!chatList) {
-            resolve();
-            return;
+function generateChatItemHTML(chat) {
+    const otherParticipants = chat.participants.filter(p => p._id.toString() !== currentUserId.toString());
+    const isDirectChat = !chat.isGroupChat && otherParticipants.length === 1;
+    const otherParticipant = isDirectChat ? otherParticipants[0] : null;
+
+    const chatName = chat.name || (otherParticipant ? `${otherParticipant.first_name} ${otherParticipant.last_name}` : 'Unnamed Group');
+    let lastMessageContent = 'No messages yet';
+    if (chat.lastMessage) {
+        const sender = chat.lastMessage.senderId._id === currentUserId ? "You: " : "";
+        lastMessageContent = sender + chat.lastMessage.content;
+    }
+
+    const lastMessageTimestamp = chat.lastMessage ? formatTimestamp(chat.lastMessage.timestamp) : formatTimestamp(chat.createdAt);
+    const avatar = otherParticipant?.avatar || chat.avatar || 'assets/group-chat.png';
+    const isOnline = otherParticipant ? userStatusCache.get(otherParticipant.mysql_user_id.toString()) : false;
+    const onlineIndicator = isDirectChat ? `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-user-id="${otherParticipant.mysql_user_id}"></span>` : '';
+
+    return `
+        <div class="chat-avatar-container">
+            <img src="${avatar}" alt="${chatName}" class="chat-avatar">
+            ${onlineIndicator}
+        </div>
+        <div class="chat-item-details" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <span class="chat-name">${chatName}</span>
+            <span class="last-message" style="display: block; text-overflow: ellipsis; overflow: hidden;">${lastMessageContent}</span>
+        </div>
+        <div class="chat-item-timestamp">
+            <span>${lastMessageTimestamp}</span>
+        </div>
+    `;
+}
+
+function upsertChatItem(chat) {
+    const chatList = document.getElementById('chatList');
+    if (!chatList) return;
+
+    const chatId = chat._id.toString();
+    console.log('[upsertChatItem] Updating chat item:', {
+        chatId,
+        name: chat.name,
+        lastMessage: chat.lastMessage ? chat.lastMessage._id : null,
+        updatedAt: chat.updatedAt
+    });
+
+    // Remove any existing instances of this chat
+    const existingItems = chatList.querySelectorAll(`[data-chat-id="${chatId}"]`);
+    if (existingItems.length > 1) {
+        console.log('[upsertChatItem] Found duplicate chat items:', existingItems.length);
+        // Keep the first one, remove the rest
+        for (let i = 1; i < existingItems.length; i++) {
+            existingItems[i].remove();
         }
+    }
 
-        let existingChat = document.querySelector(`[data-chat-id="${chat._id}"]`);
-        
-        const otherParticipants = chat.participants.filter(p => p._id.toString() !== currentUserId.toString());
-        const isDirectChat = !chat.isGroupChat && otherParticipants.length === 1;
-        const otherParticipant = isDirectChat ? otherParticipants[0] : null;
-        
-        // Get online status from cache for direct chats
-        const statusPromise = isDirectChat && otherParticipant 
-            ? checkUserStatus(otherParticipant.mysql_user_id)
-            : Promise.resolve(false);
+    let chatItem = existingItems[0] || document.createElement('div');
+    
+    if (!existingItems[0]) {
+        chatItem.className = 'chat-item';
+        chatItem.dataset.chatId = chatId;
+        chatItem.addEventListener('click', () => selectChat(chatId));
+    }
 
-        statusPromise.then(isOnline => {
-            console.log('Chat participant status:', {
-                participant: otherParticipant?.mysql_user_id,
-                isOnline
-            });
-            
-            const chatName = chat.name || (otherParticipant ? `${otherParticipant.first_name} ${otherParticipant.last_name}` : 'Unnamed Group');
+    // Update content
+    chatItem.innerHTML = generateChatItemHTML(chat);
 
-            const chatItemHTML = `
-                <div class="chat-avatar-container">
-                    <img src="${otherParticipant?.avatar || 'assets/group-chat.png'}" alt="${chatName}" class="chat-avatar">
-                    ${isDirectChat ? `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-user-id="${otherParticipant.mysql_user_id}"></span>` : ''}
-                </div>
-                <div class="chat-item-details">
-                    <span class="chat-name">${chatName}</span>
-                    ${chat.lastMessage ? `<span class="last-message">${chat.lastMessage.content}</span>` : ''}
-                </div>
-            `;
+    // If this is a new item or if it's not at the top, move it to the top
+    if (!existingItems[0] || chatItem !== chatList.firstElementChild) {
+        // Remove from current position if it exists
+        if (chatItem.parentNode) {
+            chatItem.parentNode.removeChild(chatItem);
+        }
+        // Add to the top
+        chatList.insertBefore(chatItem, chatList.firstChild);
+    }
 
-            if (existingChat) {
-                existingChat.innerHTML = chatItemHTML;
-            } else {
-                const chatItem = document.createElement('div');
-                chatItem.className = 'chat-item';
-                chatItem.dataset.chatId = chat._id;
-                chatItem.innerHTML = chatItemHTML;
-                chatItem.addEventListener('click', () => selectChat(chat._id));
-                chatList.appendChild(chatItem);
-            }
-            resolve();
-        });
+    // Handle active class
+    if (chatId === currentChatId) {
+        const currentActive = chatList.querySelector('.active-chat');
+        if (currentActive) currentActive.classList.remove('active-chat');
+        chatItem.classList.add('active-chat');
+    }
+
+    console.log('[upsertChatItem] Chat item updated successfully:', {
+        chatId,
+        isActive: chatId === currentChatId,
+        position: Array.from(chatList.children).indexOf(chatItem)
     });
 }
 
 // Function to select and display a chat
 function selectChat(chatId) {
-    if (currentChatId === chatId && document.getElementById('messageList').style.display !== 'none') {
-        return; // Don't re-select the same chat if it's already visible
+    console.log('[selectChat] Opening chat:', chatId);
+    const stringChatId = chatId.toString();
+    
+    // Clear the message cache for this chat to ensure we get fresh data
+    messageCache.delete(stringChatId);
+    console.log('[selectChat] Cleared message cache for chat:', stringChatId);
+    
+    // Always fetch messages when a chat is selected
+    console.log('[selectChat] Requesting messages from server for chat:', stringChatId);
+    socket.emit('getChatMessages', stringChatId);
+
+    if (currentChatId === stringChatId && document.getElementById('messageList').style.display !== 'none') {
+        console.log('[selectChat] Chat already open and visible, skipping UI updates');
+        return; // Don't re-run the rest of the logic if the chat is already open
     }
 
-    currentChatId = chatId;
+    console.log('[selectChat] Updating current chat ID from', currentChatId, 'to', stringChatId);
+    currentChatId = stringChatId;
 
-    // Toggle active class on chat list
-    document.querySelectorAll('.chat-item').forEach(item => {
-        item.classList.remove('active-chat');
-    });
-    const selectedChatElement = document.querySelector(`[data-chat-id="${chatId}"]`);
-    if (selectedChatElement) {
-        selectedChatElement.classList.add('active-chat');
+    const chatList = document.getElementById('chatList');
+    if(chatList) {
+        const currentActive = chatList.querySelector('.active-chat');
+        if (currentActive) {
+            currentActive.classList.remove('active-chat');
+        }
+        const newActive = chatList.querySelector(`[data-chat-id="${stringChatId}"]`);
+        if (newActive) {
+            newActive.classList.add('active-chat');
+        }
     }
 
     // Show message view, hide welcome screen
@@ -825,30 +915,27 @@ function selectChat(chatId) {
 
     if (welcomeScreen) welcomeScreen.style.display = 'none';
     if (chatInfo) chatInfo.style.display = 'block';
-    if (messageList) messageList.style.display = 'flex';
+    if (messageList) {
+        messageList.style.display = 'flex';
+        messageList.innerHTML = '<div class="loading-messages">Loading messages...</div>';
+    }
     if (messageInputContainer) messageInputContainer.style.display = 'flex';
 
-    // Clear previous messages
-    messageList.innerHTML = '';
-
-    // Enable message input
     const messageInput = document.getElementById('messageInput');
     const sendMessageBtn = document.getElementById('sendMessageBtn');
     if (messageInput) messageInput.disabled = false;
     if (sendMessageBtn) sendMessageBtn.disabled = false;
 
-    // Request new chat messages
-    socket.emit('getChatMessages', chatId);
-
     // Update header with chat info
-    const chatData = fetchedChatsData.get(chatId);
+    const chatData = fetchedChatsData.get(stringChatId);
     if (!chatData) {
-        console.warn(`Could not find cached data for chat ID ${chatId}`);
+        console.warn(`Could not find cached data for chat ID ${stringChatId}, fetching from server...`);
+        socket.emit('getChatDetails', stringChatId);
         return;
     }
-    
+
     const otherParticipants = chatData.participants.filter(p => p.mysql_user_id !== currentUserMysqlId.toString());
-    const isDirectChat = otherParticipants.length === 1;
+    const isDirectChat = !chatData.isGroupChat && otherParticipants.length === 1;
     const chatName = chatData.name || (isDirectChat ? `${otherParticipants[0].first_name} ${otherParticipants[0].last_name}` : 'Unnamed Group');
     
     const chatNameElement = document.getElementById('currentChatName');
@@ -980,70 +1067,95 @@ function showMessageNotification(message) {
 }
 
 // Function to display messages
-function displayMessages(chatId, messages) {
+function displayMessages(chatId) {
+    console.log('[displayMessages] Starting to display messages for chat:', chatId);
     const messageList = document.getElementById('messageList');
-    if (!messageList || chatId !== currentChatId) return;
+    if (!messageList) {
+        console.log('[displayMessages] Message list element not found');
+        return;
+    }
+    
+    if (chatId !== currentChatId) {
+        console.log('[displayMessages] Chat ID mismatch:', {
+            displayFor: chatId,
+            currentChat: currentChatId
+        });
+        return;
+    }
 
-    // The message list is now reliably cleared by the selectChat() function
-    // before new messages are fetched. This function now only *appends* messages.
+    const messages = messageCache.get(chatId.toString()) || [];
+    console.log('[displayMessages] Retrieved messages from cache:', {
+        chatId,
+        messageCount: messages.length,
+        messageIds: messages.map(m => m._id)
+    });
 
-    // Ensure messages is always an array
-    const messagesToDisplay = Array.isArray(messages) ? messages : [messages];
+    // Clear the message list
+    messageList.innerHTML = '';
 
-    messagesToDisplay.forEach(message => {
-        // Skip if message is already displayed
-        if (document.querySelector(`[data-message-id="${message._id}"]`)) {
+    if (messages.length === 0) {
+        console.log('[displayMessages] No messages to display');
+        messageList.innerHTML = '<div class="no-messages-yet">No messages yet. Start the conversation!</div>';
+        return;
+    }
+
+    // Create a Set to track displayed message IDs
+    const displayedMessageIds = new Set();
+    let displayedCount = 0;
+
+    // Sort messages by timestamp to ensure correct order
+    const sortedMessages = [...messages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    sortedMessages.forEach(message => {
+        // Skip if we've already displayed this message
+        if (displayedMessageIds.has(message._id)) {
+            console.log('[displayMessages] Skipping duplicate message:', message._id);
             return;
         }
+
+        // Add message ID to displayed set
+        displayedMessageIds.add(message._id);
 
         const messageElement = document.createElement('div');
         messageElement.className = `message-item ${message.senderId._id === currentUserId ? 'sent' : 'received'}`;
         messageElement.dataset.messageId = message._id;
-
         messageElement.innerHTML = `
-            ${message.senderId._id !== currentUserId ? `
-                <img src="${message.senderId.avatar || 'assets/user.png'}" alt="${message.senderId.first_name}" class="message-avatar">
-            ` : ''}
+            <img src="${message.senderId.avatar || 'assets/user.png'}" class="message-avatar" alt="Avatar">
             <div class="message-content">
-                <span class="message-sender">${message.senderId._id === currentUserId ? 'You' : `${message.senderId.first_name} ${message.senderId.last_name}`}</span>
-                <p>${message.content}</p>
-                <span class="message-timestamp">${new Date(message.timestamp).toLocaleTimeString()}</span>
+                <div class="message-sender">${message.senderId.first_name} ${message.senderId.last_name}</div>
+                <div class="message-text">${message.content}</div>
+                <div class="message-timestamp">${new Date(message.timestamp).toLocaleTimeString()}</div>
             </div>
-            ${message.senderId._id === currentUserId ? `
-                <img src="${message.senderId.avatar || 'assets/user.png'}" alt="You" class="message-avatar">
-            ` : ''}
         `;
-
         messageList.appendChild(messageElement);
+        displayedCount++;
     });
-
-    // Scroll to bottom
+    
+    console.log('[displayMessages] Message display summary:', {
+        chatId,
+        totalMessages: messages.length,
+        displayedCount,
+        skippedCount: messages.length - displayedCount,
+        displayedIds: Array.from(displayedMessageIds)
+    });
+    
+    // Scroll to the bottom
     messageList.scrollTop = messageList.scrollHeight;
 }
 
 // Set up periodic status updates
 function setupStatusUpdates() {
-    // Initial fetch and update
-    fetchAllStudentStatuses()
-        .then(() => updateAllStatusIndicators())
-        .catch(console.error);
-    
-    // Update statuses every 30 seconds
-    setInterval(() => {
-        fetchAllStudentStatuses()
-            .then(() => updateAllStatusIndicators())
-            .catch(console.error);
-    }, 30000);
+    // Initial fetch
+    fetchAllStudentStatuses();
+    // Update every 30 seconds
+    setInterval(fetchAllStudentStatuses, 30000);
 }
 
-// Function to load chats
 function loadChats() {
-    if (!socket.connected) {
-        console.log('Socket not connected, attempting to connect...');
-        socket.connect();
-    } else if (isAuthenticated) {
-        // Only request chats if already authenticated
+    if (isAuthenticated) {
+        console.log('Socket already authenticated, requesting chats...');
         socket.emit('getMyChats');
+    } else {
+        console.log('Socket not authenticated yet, waiting for auth event to request chats.');
     }
-    // If not authenticated, the authenticated event handler will request chats
 }
